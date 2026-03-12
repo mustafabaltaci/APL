@@ -2,14 +2,21 @@
  * Utility for pixel manipulation and sprite sheet generation
  */
 
-export const removeWhiteBackground = (ctx, imageData) => {
+export const removeWhiteBackground = (ctx, imageData, tolerance = 15) => {
   const data = imageData.data;
   for (let i = 0; i < data.length; i += 4) {
     const r = data[i];
     const g = data[i + 1];
     const b = data[i + 2];
-    // If pixel is strictly #FFFFFF (255, 255, 255)
-    if (r === 255 && g === 255 && b === 255) {
+    
+    // Calculate Euclidean distance from pure white (255, 255, 255)
+    const distance = Math.sqrt(
+      Math.pow(255 - r, 2) + 
+      Math.pow(255 - g, 2) + 
+      Math.pow(255 - b, 2)
+    );
+
+    if (distance <= tolerance) {
       data[i + 3] = 0; // Set alpha to 0
     }
   }
@@ -29,7 +36,7 @@ export const rescaleImage = (image, targetW, targetH, options = {}) => {
 
   if (options.removeWhite) {
     const imageData = ctx.getImageData(0, 0, targetW, targetH);
-    removeWhiteBackground(ctx, imageData);
+    removeWhiteBackground(ctx, imageData, options.tolerance);
   }
 
   return canvas;
@@ -89,7 +96,8 @@ export const generateSpriteSheet = async (assets, baseResolution, options) => {
         const targetW = asset.gridSpan.w * baseResolution;
         const targetH = asset.gridSpan.h * baseResolution;
         const canvas = rescaleImage(img, targetW, targetH, {
-          removeWhite: options.removeWhite
+          removeWhite: options.removeWhite,
+          tolerance: options.tolerance
         });
         resolve(canvas);
       };
