@@ -19,6 +19,7 @@ export default function App() {
   const [packageName, setPackageName] = useState('MySpriteSheet');
   const [baseResolution, setBaseResolution] = useState(32);
   const [removeWhite, setRemoveWhite] = useState(false);
+  const [tolerance, setTolerance] = useState(15);
   const [assets, setAssets] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
 
@@ -54,7 +55,7 @@ export default function App() {
     if (assets.length === 0) return;
     setIsGenerating(true);
     try {
-      const canvas = await generateSpriteSheet(assets, baseResolution, { removeWhite });
+      const canvas = await generateSpriteSheet(assets, baseResolution, { removeWhite, tolerance });
       
       const link = document.createElement('a');
       link.download = `${packageName}.png`;
@@ -202,6 +203,22 @@ export default function App() {
                   </div>
                   <span className="text-sm font-medium text-gray-300">Remove White Background</span>
                 </label>
+
+                {removeWhite && (
+                  <div className="space-y-2 pl-2 border-l-2 border-indigo-600/30 animate-in fade-in slide-in-from-left-2 duration-200">
+                    <div className="flex justify-between items-center">
+                      <span className="text-xs font-semibold uppercase text-gray-500">Tolerance: {tolerance}</span>
+                    </div>
+                    <input 
+                      type="range" 
+                      min="0" 
+                      max="100" 
+                      value={tolerance} 
+                      onChange={(e) => setTolerance(parseInt(e.target.value))}
+                      className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                    />
+                  </div>
+                )}
 
                 <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-3">
                   <Grid3X3 className="w-5 h-5 text-blue-400 shrink-0" />
