@@ -22,6 +22,7 @@ export default function App() {
   const [baseResolution, setBaseResolution] = useState(32);
   const [removeWhite, setRemoveWhite] = useState(false);
   const [tolerance, setTolerance] = useState(15);
+  const [generateOutlines, setGenerateOutlines] = useState(false);
   const [assets, setAssets] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
@@ -31,7 +32,8 @@ export default function App() {
       id: Math.random().toString(36).substr(2, 9),
       file,
       preview: URL.createObjectURL(file),
-      gridSpan: { w: 1, h: 1 }
+      gridSpan: { w: 1, h: 1 },
+      padding: { x: 0, y: 0 }
     }));
     setAssets(prev => [...prev, ...newAssets]);
   }, []);
@@ -54,16 +56,46 @@ export default function App() {
     ));
   };
 
+  const updatePadding = (id, axis, value) => {
+    setAssets(prev => prev.map(a => 
+      a.id === id ? { ...a, padding: { ...a.padding, [axis]: parseInt(value) || 0 } } : a
+    ));
+  };
+
+  const downloadFile = (blob, fileName) => {
+    const link = document.createElement('a');
+    link.download = fileName;
+    link.href = URL.createObjectURL(blob);
+    link.click();
+    URL.revokeObjectURL(link.href);
+  };
+
   const handleGenerate = async () => {
     if (assets.length === 0) return;
     setIsGenerating(true);
     try {
-      const canvas = await generateSpriteSheet(assets, baseResolution, { removeWhite, tolerance });
+      const { canvas, packing } = await generateSpriteSheet(assets, baseResolution, { removeWhite, tolerance });
       
-      const link = document.createElement('a');
-      link.download = `${packageName}.png`;
-      link.href = canvas.toDataURL('image/png');
-      link.click();
+      // 1. Download Sprite Sheet PNG
+      canvas.toBlob((blob) => downloadFile(blob, `${packageName}.png`));
+
+      // 2. Generate and Download Tiled .tsx
+      const tileCount = packing.placements.length;
+      const columns = Math.floor(packing.width / baseResolution);
+      const tsxContent = `<?xml version="1.0" encoding="UTF-8"?>
+<tileset version="1.10" tiledversion="1.10.2" name="${packageName}" tilewidth="${baseResolution}" tileheight="${baseResolution}" tilecount="${tileCount}" columns="${columns}">
+  <image source="${packageName}.png" width="${packing.width}" height="${packing.height}"/>
+</tileset>`;
+      const tsxBlob = new Blob([tsxContent], { type: 'text/xml' });
+      downloadFile(tsxBlob, `${packageName}.tsx`);
+
+      // 3. Generate and Download Outlines if enabled
+      if (generateOutlines) {
+        const { generateHoverOutlines } = await import('./utils/canvasProcessor');
+        const outlineCanvas = generateHoverOutlines(canvas);
+        outlineCanvas.toBlob((blob) => downloadFile(blob, `${packageName}_outlines.png`));
+      }
+
     } catch (error) {
       console.error('Generation failed:', error);
     } finally {
@@ -157,7 +189,7 @@ export default function App() {
                   
                   <div className="flex-1 space-y-2">
                     <p className="text-xs font-medium text-gray-400 truncate w-32">{asset.file.name}</p>
-                    <div className="flex items-center gap-2">
+                    <div className="flex flex-wrap items-center gap-2">
                       <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
                         <span className="text-[10px] text-gray-500">W</span>
                         <input 
@@ -168,7 +200,6 @@ export default function App() {
                           className="w-8 bg-transparent text-xs outline-none"
                         />
                       </div>
-                      <span className="text-gray-600">×</span>
                       <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
                         <span className="text-[10px] text-gray-500">H</span>
                         <input 
@@ -177,6 +208,24 @@ export default function App() {
                           value={asset.gridSpan.h}
                           onChange={(e) => updateGridSpan(asset.id, 'h', e.target.value)}
                           className="w-8 bg-transparent text-xs outline-none"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1">
+                        <span className="text-[10px] text-indigo-400">PX</span>
+                        <input 
+                          type="number" 
+                          value={asset.padding.x}
+                          onChange={(e) => updatePadding(asset.id, 'x', e.target.value)}
+                          className="w-8 bg-transparent text-xs outline-none text-indigo-200"
+                        />
+                      </div>
+                      <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1">
+                        <span className="text-[10px] text-indigo-400">PY</span>
+                        <input 
+                          type="number" 
+                          value={asset.padding.y}
+                          onChange={(e) => updatePadding(asset.id, 'y', e.target.value)}
+                          className="w-8 bg-transparent text-xs outline-none text-indigo-200"
                         />
                       </div>
                     </div>
@@ -231,6 +280,20 @@ export default function App() {
                     />
                   </div>
                 )}
+
+                <label className="flex items-center gap-3 cursor-pointer group pb-2 border-b border-gray-800/50">
+                  <div className="relative flex items-center">
+                    <input 
+                      type="checkbox" 
+                      checked={generateOutlines}
+                      onChange={(e) => setGenerateOutlines(e.target.checked)}
+                      className="sr-only peer"
+                    />
+                    <div className="w-10 h-6 bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
+                    <div className="absolute left-1 top-1 w-4 h-4 bg-gray-400 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
+                  </div>
+                  <span className="text-sm font-medium text-gray-300">Generate Hover Outlines</span>
+                </label>
 
                 <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-3">
                   <Grid3X3 className="w-5 h-5 text-blue-400 shrink-0" />
@@ -313,9 +376,10 @@ export default function App() {
                 {[
                   { title: "Set Base Grid", text: "Choose the core resolution for your game (e.g., 48x48)." },
                   { title: "Drag & Drop", text: "Upload your raw pixel art assets." },
-                  { title: "Configure Spans", text: "Set how many grid blocks each item occupies (Width x Height). For example, a chair might be 1x1, while a large table is 2x4." },
-                  { title: "Clean Backgrounds (Color Keying)", text: "Enable this to instantly remove pure white (#FFFFFF) backgrounds. Adjust the Tolerance slider to clean up noisy anti-aliased pixels without damaging your core art." },
-                  { title: "Generate", text: "Click to instantly pack, scale (using precise Nearest Neighbor), and download your master sprite sheet." }
+                  { title: "Configure Spans & Padding", text: "Set grid blocks (WxH) and add PX/PY margins for perfect centering after auto-trimming." },
+                  { title: "Clean Backgrounds", text: "Instantly remove backgrounds with Euclidean tolerance for anti-aliased edges." },
+                  { title: "Tiled & Outlines", text: "Get a production-ready .tsx tileset and an optional _outlines.png for hover effects." },
+                  { title: "Generate", text: "Instantly pack, scale (Nearest Neighbor), and download your game-ready assets." }
                 ].map((step, i) => (
                   <div key={i} className="flex gap-4">
                     <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-sm">
