@@ -20,8 +20,6 @@ const GRID_RESOLUTIONS = [16, 32, 48, 64];
 export default function App() {
   const [packageName, setPackageName] = useState('MySpriteSheet');
   const [baseResolution, setBaseResolution] = useState(32);
-  const [removeWhite, setRemoveWhite] = useState(false);
-  const [tolerance, setTolerance] = useState(15);
   const [generateOutlines, setGenerateOutlines] = useState(false);
   const [assets, setAssets] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -33,7 +31,9 @@ export default function App() {
       file,
       preview: URL.createObjectURL(file),
       gridSpan: { w: 1, h: 1 },
-      padding: { x: 0, y: 0 }
+      padding: { x: 0, y: 0 },
+      removeBg: true,
+      tolerance: 15
     }));
     setAssets(prev => [...prev, ...newAssets]);
   }, []);
@@ -48,6 +48,12 @@ export default function App() {
 
   const removeAsset = (id) => {
     setAssets(prev => prev.filter(a => a.id !== id));
+  };
+
+  const updateAssetSetting = (id, setting, value) => {
+    setAssets(prev => prev.map(a => 
+      a.id === id ? { ...a, [setting]: value } : a
+    ));
   };
 
   const updateGridSpan = (id, axis, value) => {
@@ -74,7 +80,7 @@ export default function App() {
     if (assets.length === 0) return;
     setIsGenerating(true);
     try {
-      const { canvas, packing } = await generateSpriteSheet(assets, baseResolution, { removeWhite, tolerance });
+      const { canvas, packing } = await generateSpriteSheet(assets, baseResolution, { generateOutlines });
       
       // 1. Download Sprite Sheet PNG
       canvas.toBlob((blob) => downloadFile(blob, `${packageName}.png`));
@@ -182,61 +188,94 @@ export default function App() {
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {assets.map((asset) => (
-                <div key={asset.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex gap-4 items-center">
-                  <div className="relative w-16 h-16 bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center border border-gray-700">
-                    <img src={asset.preview} alt="preview" className="max-w-full max-h-full object-contain image-pixelated" />
-                  </div>
-                  
-                  <div className="flex-1 space-y-2">
-                    <p className="text-xs font-medium text-gray-400 truncate w-32">{asset.file.name}</p>
-                    <div className="flex flex-wrap items-center gap-2">
-                      <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
-                        <span className="text-[10px] text-gray-500">W</span>
-                        <input 
-                          type="number" 
-                          min="1"
-                          value={asset.gridSpan.w}
-                          onChange={(e) => updateGridSpan(asset.id, 'w', e.target.value)}
-                          className="w-8 bg-transparent text-xs outline-none"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
-                        <span className="text-[10px] text-gray-500">H</span>
-                        <input 
-                          type="number" 
-                          min="1"
-                          value={asset.gridSpan.h}
-                          onChange={(e) => updateGridSpan(asset.id, 'h', e.target.value)}
-                          className="w-8 bg-transparent text-xs outline-none"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1">
-                        <span className="text-[10px] text-indigo-400">PX</span>
-                        <input 
-                          type="number" 
-                          value={asset.padding.x}
-                          onChange={(e) => updatePadding(asset.id, 'x', e.target.value)}
-                          className="w-8 bg-transparent text-xs outline-none text-indigo-200"
-                        />
-                      </div>
-                      <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1">
-                        <span className="text-[10px] text-indigo-400">PY</span>
-                        <input 
-                          type="number" 
-                          value={asset.padding.y}
-                          onChange={(e) => updatePadding(asset.id, 'y', e.target.value)}
-                          className="w-8 bg-transparent text-xs outline-none text-indigo-200"
-                        />
+                <div key={asset.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-4">
+                  <div className="flex gap-4 items-center">
+                    <div className="relative w-16 h-16 bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center border border-gray-700">
+                      <img src={asset.preview} alt="preview" className="max-w-full max-h-full object-contain image-pixelated" />
+                    </div>
+                    
+                    <div className="flex-1 space-y-2">
+                      <p className="text-xs font-medium text-gray-400 truncate w-32">{asset.file.name}</p>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
+                          <span className="text-[10px] text-gray-500">W</span>
+                          <input 
+                            type="number" 
+                            min="1"
+                            value={asset.gridSpan.w}
+                            onChange={(e) => updateGridSpan(asset.id, 'w', e.target.value)}
+                            className="w-8 bg-transparent text-xs outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
+                          <span className="text-[10px] text-gray-500">H</span>
+                          <input 
+                            type="number" 
+                            min="1"
+                            value={asset.gridSpan.h}
+                            onChange={(e) => updateGridSpan(asset.id, 'h', e.target.value)}
+                            className="w-8 bg-transparent text-xs outline-none"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1">
+                          <span className="text-[10px] text-indigo-400">PX</span>
+                          <input 
+                            type="number" 
+                            value={asset.padding.x}
+                            onChange={(e) => updatePadding(asset.id, 'x', e.target.value)}
+                            className="w-8 bg-transparent text-xs outline-none text-indigo-200"
+                          />
+                        </div>
+                        <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1">
+                          <span className="text-[10px] text-indigo-400">PY</span>
+                          <input 
+                            type="number" 
+                            value={asset.padding.y}
+                            onChange={(e) => updatePadding(asset.id, 'y', e.target.value)}
+                            className="w-8 bg-transparent text-xs outline-none text-indigo-200"
+                          />
+                        </div>
                       </div>
                     </div>
+
+                    <button 
+                      onClick={() => removeAsset(asset.id)}
+                      className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                    >
+                      <Trash2 className="w-5 h-5" />
+                    </button>
                   </div>
 
-                  <button 
-                    onClick={() => removeAsset(asset.id)}
-                    className="p-2 text-gray-500 hover:text-red-400 transition-colors"
-                  >
-                    <Trash2 className="w-5 h-5" />
-                  </button>
+                  {/* Per-Asset Background Removal Settings */}
+                  <div className="pt-3 border-t border-gray-800 flex flex-col gap-3">
+                    <label className="flex items-center gap-3 cursor-pointer group">
+                      <div className="relative flex items-center">
+                        <input 
+                          type="checkbox" 
+                          checked={asset.removeBg}
+                          onChange={(e) => updateAssetSetting(asset.id, 'removeBg', e.target.checked)}
+                          className="sr-only peer"
+                        />
+                        <div className="w-8 h-4 bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
+                        <div className="absolute left-1 top-1 w-2 h-2 bg-gray-400 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
+                      </div>
+                      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Clear Background</span>
+                    </label>
+
+                    {asset.removeBg && (
+                      <div className="flex items-center gap-4 animate-in fade-in duration-200">
+                        <span className="text-[10px] font-semibold text-gray-500 uppercase whitespace-nowrap">Tol: {asset.tolerance}</span>
+                        <input 
+                          type="range" 
+                          min="0" 
+                          max="100" 
+                          value={asset.tolerance} 
+                          onChange={(e) => updateAssetSetting(asset.id, 'tolerance', parseInt(e.target.value))}
+                          className="flex-1 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                        />
+                      </div>
+                    )}
+                  </div>
                 </div>
               ))}
             </div>
@@ -251,36 +290,6 @@ export default function App() {
               </div>
 
               <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer group">
-                  <div className="relative flex items-center">
-                    <input 
-                      type="checkbox" 
-                      checked={removeWhite}
-                      onChange={(e) => setRemoveWhite(e.target.checked)}
-                      className="sr-only peer"
-                    />
-                    <div className="w-10 h-6 bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
-                    <div className="absolute left-1 top-1 w-4 h-4 bg-gray-400 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
-                  </div>
-                  <span className="text-sm font-medium text-gray-300">Remove White Background</span>
-                </label>
-
-                {removeWhite && (
-                  <div className="space-y-2 pl-2 border-l-2 border-indigo-600/30 animate-in fade-in slide-in-from-left-2 duration-200">
-                    <div className="flex justify-between items-center">
-                      <span className="text-xs font-semibold uppercase text-gray-500">Tolerance: {tolerance}</span>
-                    </div>
-                    <input 
-                      type="range" 
-                      min="0" 
-                      max="100" 
-                      value={tolerance} 
-                      onChange={(e) => setTolerance(parseInt(e.target.value))}
-                      className="w-full h-1.5 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
-                    />
-                  </div>
-                )}
-
                 <label className="flex items-center gap-3 cursor-pointer group pb-2 border-b border-gray-800/50">
                   <div className="relative flex items-center">
                     <input 

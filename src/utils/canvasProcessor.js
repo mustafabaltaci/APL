@@ -45,7 +45,7 @@ export const getTrimmedBounds = (ctx, width, height) => {
   return hasContent ? { x: minX, y: minY, w: maxX - minX + 1, h: maxY - minY + 1 } : null;
 };
 
-export const processAsset = (image, asset, baseResolution, options = {}) => {
+export const processAsset = (image, asset, baseResolution) => {
   // 1. Create temporary canvas for initial processing (color keying)
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = image.width;
@@ -53,9 +53,9 @@ export const processAsset = (image, asset, baseResolution, options = {}) => {
   const tempCtx = tempCanvas.getContext('2d');
   tempCtx.drawImage(image, 0, 0);
 
-  if (options.removeWhite) {
+  if (asset.removeBg) {
     const imageData = tempCtx.getImageData(0, 0, image.width, image.height);
-    removeWhiteBackground(tempCtx, imageData, options.tolerance);
+    removeWhiteBackground(tempCtx, imageData, asset.tolerance);
   }
 
   // 2. Auto-Trim
@@ -175,7 +175,7 @@ export const generateSpriteSheet = async (assets, baseResolution, options) => {
     return new Promise((resolve) => {
       const img = new Image();
       img.onload = () => {
-        const canvas = processAsset(img, asset, baseResolution, options);
+        const canvas = processAsset(img, asset, baseResolution);
         resolve(canvas);
       };
       img.src = asset.preview;
