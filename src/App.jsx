@@ -9,6 +9,8 @@ import {
   Grid3X3, 
   CheckCircle2,
   XCircle,
+  HelpCircle,
+  X,
   Image as ImageIcon
 } from 'lucide-react';
 import { generateSpriteSheet } from './utils/canvasProcessor';
@@ -22,6 +24,7 @@ export default function App() {
   const [tolerance, setTolerance] = useState(15);
   const [assets, setAssets] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   const onDrop = useCallback((acceptedFiles) => {
     const newAssets = acceptedFiles.map(file => ({
@@ -79,7 +82,16 @@ export default function App() {
               <Package className="w-8 h-8 text-white" />
             </div>
             <div>
-              <h1 className="text-2xl font-bold text-white tracking-tight">SpritePacker</h1>
+              <div className="flex items-center gap-3">
+                <h1 className="text-2xl font-bold text-white tracking-tight">SpritePacker</h1>
+                <button 
+                  onClick={() => setIsModalOpen(true)}
+                  className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-full transition-all"
+                  title="How to Use"
+                >
+                  <HelpCircle className="w-5 h-5" />
+                </button>
+              </div>
               <p className="text-sm text-gray-400">Pixel Art Sprite Sheet Generator</p>
             </div>
           </div>
@@ -271,6 +283,79 @@ export default function App() {
         </main>
       </div>
       
+      {/* How to Use Modal */}
+      {isModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+          <div 
+            className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+            onClick={() => setIsModalOpen(false)}
+          />
+          <div className="relative bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
+            <div className="flex items-center justify-between p-6 border-b border-gray-800">
+              <div className="flex items-center gap-3">
+                <HelpCircle className="w-6 h-6 text-indigo-400" />
+                <h2 className="text-xl font-bold text-white">How to Use SpritePacker</h2>
+              </div>
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="p-2 text-gray-500 hover:text-white transition-colors"
+              >
+                <X className="w-6 h-6" />
+              </button>
+            </div>
+            
+            <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
+              <p className="text-gray-300 leading-relaxed">
+                A client-side, privacy-first pipeline to generate production-ready sprite sheets for your 2D games.
+              </p>
+              
+              <div className="space-y-6">
+                {[
+                  { title: "Set Base Grid", text: "Choose the core resolution for your game (e.g., 48x48)." },
+                  { title: "Drag & Drop", text: "Upload your raw pixel art assets." },
+                  { title: "Configure Spans", text: "Set how many grid blocks each item occupies (Width x Height). For example, a chair might be 1x1, while a large table is 2x4." },
+                  { title: "Clean Backgrounds (Color Keying)", text: "Enable this to instantly remove pure white (#FFFFFF) backgrounds. Adjust the Tolerance slider to clean up noisy anti-aliased pixels without damaging your core art." },
+                  { title: "Generate", text: "Click to instantly pack, scale (using precise Nearest Neighbor), and download your master sprite sheet." }
+                ].map((step, i) => (
+                  <div key={i} className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-sm">
+                      {i + 1}
+                    </div>
+                    <div>
+                      <h3 className="font-bold text-white mb-1">{step.title}</h3>
+                      <p className="text-sm text-gray-400 leading-relaxed">{step.text}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            <div className="p-6 bg-gray-800/50 border-t border-gray-800 flex justify-end">
+              <button 
+                onClick={() => setIsModalOpen(false)}
+                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all"
+              >
+                Got it!
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Footer Signature */}
+      <footer className="w-full py-8 text-center mt-12">
+        <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 font-medium tracking-wide">
+          <span>Developed by Mustafa Baltacı</span>
+          <span className="text-gray-700">x</span>
+          <div className="flex items-center gap-1.5 text-indigo-400/80">
+            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+              <path d="M12,2L14.5,9.5L22,12L14.5,14.5L12,22L9.5,14.5L2,12L9.5,9.5L12,2Z" />
+            </svg>
+            <span className="uppercase tracking-[0.2em] text-[10px]">Gemini</span>
+          </div>
+        </div>
+      </footer>
+
       <style>{`
         .image-pixelated {
           image-rendering: pixelated;
