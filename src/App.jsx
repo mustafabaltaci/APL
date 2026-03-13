@@ -11,7 +11,9 @@ import {
   XCircle,
   HelpCircle,
   X,
-  Image as ImageIcon
+  Image as ImageIcon,
+  Save,
+  FolderOpen
 } from 'lucide-react';
 import { generateSpriteSheet } from './utils/canvasProcessor';
 
@@ -25,8 +27,50 @@ export default function App() {
   const [isGenerating, setIsGenerating] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  const onDrop = useCallback((acceptedFiles) => {
-    const newAssets = acceptedFiles.map(file => {
+  const onDrop = useCallback(async (acceptedFiles) => {
+    // Check if a project file is dropped
+    const projectFile = acceptedFiles.find(file => file.name.endsWith('.spack') || file.name.endsWith('.json'));
+    if (projectFile) {
+      const reader = new FileReader();
+      reader.onload = async (e) => {
+        try {
+          const data = JSON.parse(e.target.result);
+          if (!data || !data.assets || !data.packageName) {
+            throw new Error('Invalid project structure');
+          }
+          
+          setPackageName(data.packageName);
+          if (data.baseResolution) setBaseResolution(data.baseResolution);
+          if (data.generateOutlines !== undefined) setGenerateOutlines(data.generateOutlines);
+          
+          const restoredAssets = await Promise.all(data.assets.map(async (asset) => {
+            const res = await fetch(asset.base64Data);
+            const blob = await res.blob();
+            const file = new File([blob], asset.fileName, { type: asset.fileType });
+            return {
+              id: asset.id || Math.random().toString(36).substr(2, 9),
+              customName: asset.customName || asset.fileName,
+              file: file,
+              preview: URL.createObjectURL(file),
+              gridSpan: asset.gridSpan || { w: 1, h: 1 },
+              padding: asset.padding || { x: 0, y: 0 },
+              removeBg: asset.removeBg || false,
+              tolerance: asset.tolerance || 15
+            };
+          }));
+          
+          setAssets(restoredAssets);
+        } catch (error) {
+          console.error("Failed to load project:", error);
+          alert("Invalid project file.");
+        }
+      };
+      reader.readAsText(projectFile);
+      return;
+    }
+
+    const imageFiles = acceptedFiles.filter(file => file.type.startsWith('image/'));
+    const newAssets = imageFiles.map(file => {
       const lastDotIndex = file.name.lastIndexOf('.');
       const customName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
       
@@ -48,7 +92,9 @@ export default function App() {
     onDrop,
     accept: {
       'image/png': ['.png'],
-      'image/jpeg': ['.jpg', '.jpeg']
+      'image/jpeg': ['.jpg', '.jpeg'],
+      'application/json': ['.json', '.spack'],
+      'application/x-spritepacker': ['.spack']
     }
   });
 
@@ -80,6 +126,52 @@ export default function App() {
     link.href = URL.createObjectURL(blob);
     link.click();
     URL.revokeObjectURL(link.href);
+  };
+
+  const handleSaveProject = async () => {
+    try {
+      const serializedAssets = await Promise.all(
+        assets.map(async (asset) => {
+          return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => {
+              resolve({
+                id: asset.id,
+                customName: asset.customName,
+                gridSpan: asset.gridSpan,
+                padding: asset.padding,
+                removeBg: asset.removeBg,
+                tolerance: asset.tolerance,
+                fileName: asset.file.name,
+                fileType: asset.file.type,
+                base64Data: reader.result
+              });
+            };
+            reader.onerror = reject;
+            reader.readAsDataURL(asset.file);
+          });
+        })
+      );
+
+      const projectData = {
+        version: 1,
+        packageName,
+        baseResolution,
+        generateOutlines,
+        assets: serializedAssets
+      };
+
+      const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(projectData));
+      const downloadAnchorNode = document.createElement('a');
+      downloadAnchorNode.setAttribute("href", dataStr);
+      downloadAnchorNode.setAttribute("download", `${packageName}_workspace.spack`);
+      document.body.appendChild(downloadAnchorNode);
+      downloadAnchorNode.click();
+      downloadAnchorNode.remove();
+    } catch (error) {
+      console.error('Failed to save project:', error);
+      alert('Failed to save project.');
+    }
   };
 
   const handleGenerate = async () => {
@@ -186,9 +278,9 @@ export default function App() {
               </div>
               <div className="text-center">
                 <p className="text-lg font-medium text-gray-200">
-                  {isDragActive ? 'Drop your sprites here' : 'Drag & drop assets'}
+                  {isDragActive ? 'Drop your sprites or project here' : 'Drag & drop assets or project'}
                 </p>
-                <p className="text-sm text-gray-500">Supports PNG and JPG</p>
+                <p className="text-sm text-gray-500">Supports PNG, JPG, and .spack projects</p>
               </div>
             </div>
 
@@ -333,6 +425,31 @@ export default function App() {
                   <span className="text-gray-400">Target Grid</span>
                   <span className="font-mono text-white">{baseResolution}px</span>
                 </div>
+              </div>
+
+              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-800/50">
+                <button 
+                  onClick={handleSaveProject}
+                  className="py-3 bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm"
+                >
+                  <Save className="w-4 h-4 text-indigo-400" />
+                  Save Project
+                </button>
+                <label className="cursor-pointer py-3 bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm">
+                  <FolderOpen className="w-4 h-4 text-indigo-400" />
+                  Load Project
+                  <input
+                    type="file"
+                    accept=".spack,.json"
+                    className="hidden"
+                    onChange={(e) => {
+                      if (e.target.files && e.target.files.length > 0) {
+                        onDrop(Array.from(e.target.files));
+                        e.target.value = null; // reset to allow loading the same file again
+                      }
+                    }}
+                  />
+                </label>
               </div>
 
               <button 
