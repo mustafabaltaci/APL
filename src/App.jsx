@@ -426,7 +426,7 @@ export default function App() {
                     {assets.length > 0 && (
                       <button 
                         onClick={handleClearAll}
-                        className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        className="p-1.5 text-red-500/70 hover:text-red-400 bg-red-500/5 hover:bg-red-500/10 border border-red-500/10 rounded-lg transition-all shadow-sm"
                         title={t('clearAll')}
                       >
                         <Trash2 className="w-3.5 h-3.5" />
