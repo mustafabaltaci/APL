@@ -26,15 +26,21 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const onDrop = useCallback((acceptedFiles) => {
-    const newAssets = acceptedFiles.map(file => ({
-      id: Math.random().toString(36).substr(2, 9),
-      file,
-      preview: URL.createObjectURL(file),
-      gridSpan: { w: 1, h: 1 },
-      padding: { x: 0, y: 0 },
-      removeBg: true,
-      tolerance: 15
-    }));
+    const newAssets = acceptedFiles.map(file => {
+      const lastDotIndex = file.name.lastIndexOf('.');
+      const customName = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
+      
+      return {
+        id: Math.random().toString(36).substr(2, 9),
+        file,
+        customName,
+        preview: URL.createObjectURL(file),
+        gridSpan: { w: 1, h: 1 },
+        padding: { x: 0, y: 0 },
+        removeBg: true,
+        tolerance: 15
+      };
+    });
     setAssets(prev => [...prev, ...newAssets]);
   }, []);
 
@@ -194,8 +200,14 @@ export default function App() {
                       <img src={asset.preview} alt="preview" className="max-w-full max-h-full object-contain image-pixelated" />
                     </div>
                     
-                    <div className="flex-1 space-y-2">
-                      <p className="text-xs font-medium text-gray-400 truncate w-32">{asset.file.name}</p>
+                    <div className="flex-1 space-y-2 min-w-0">
+                      <input 
+                        type="text"
+                        value={asset.customName}
+                        onChange={(e) => updateAssetSetting(asset.id, 'customName', e.target.value)}
+                        className="text-xs font-medium text-gray-300 bg-transparent border border-transparent hover:bg-gray-800 hover:border-gray-700 focus:bg-gray-800 focus:border-indigo-500 rounded px-1.5 py-1 -ml-1.5 outline-none w-full max-w-[160px] truncate transition-all"
+                        title="Rename asset"
+                      />
                       <div className="flex flex-wrap items-center gap-2">
                         <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
                           <span className="text-[10px] text-gray-500">W</span>
