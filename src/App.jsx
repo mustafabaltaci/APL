@@ -104,6 +104,13 @@ export default function App() {
     setAssets(prev => prev.filter(a => a.id !== id));
   };
 
+  const handleClearAll = () => {
+    if (assets.length === 0) return;
+    if (window.confirm(t('confirmClear'))) {
+      setAssets([]);
+    }
+  };
+
   const updateAssetSetting = (id, setting, value) => {
     setAssets(prev => prev.map(a => 
       a.id === id ? { ...a, [setting]: value } : a
@@ -414,7 +421,18 @@ export default function App() {
 
               <div className="space-y-4">
                 <div className={`flex justify-between items-center px-5 py-4 ${nestedGlassClass} hover:bg-white/10 group`}>
-                  <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">{t('totalAssets')}</span>
+                  <div className="flex items-center gap-3">
+                    <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">{t('totalAssets')}</span>
+                    {assets.length > 0 && (
+                      <button 
+                        onClick={handleClearAll}
+                        className="p-1.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-lg transition-all opacity-0 group-hover:opacity-100"
+                        title={t('clearAll')}
+                      >
+                        <Trash2 className="w-3.5 h-3.5" />
+                      </button>
+                    )}
+                  </div>
                   <span className="text-xl font-black text-indigo-400 drop-shadow-[0_0_10px_rgba(129,140,248,0.3)] group-hover:scale-110 transition-transform">{assets.length}</span>
                 </div>
                 <div className={`flex justify-between items-center px-5 py-4 ${nestedGlassClass} hover:bg-white/10 group`}>
