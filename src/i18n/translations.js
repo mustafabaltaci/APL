@@ -41,7 +41,9 @@ export const translations = {
     invalidProject: "Invalid project file.",
     failedToSave: "Failed to save project.",
     failedToLoad: "Failed to load project:",
-    generationFailed: "Generation failed:"
+    generationFailed: "Generation failed:",
+    clearAll: "Clear All",
+    confirmClear: "Are you sure you want to remove all uploaded assets? This action cannot be undone."
   },
   tr: {
     title: "SpritePacker",
@@ -85,6 +87,8 @@ export const translations = {
     invalidProject: "Geçersiz proje dosyası.",
     failedToSave: "Proje kaydedilemedi.",
     failedToLoad: "Proje yüklenemedi:",
-    generationFailed: "Oluşturma başarısız oldu:"
+    generationFailed: "Oluşturma başarısız oldu:",
+    clearAll: "Tümünü Temizle",
+    confirmClear: "Tüm yüklenen asset'leri kaldırmak istediğinizden emin misiniz? Bu işlem geri alınamaz."
   }
 };

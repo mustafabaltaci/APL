@@ -249,17 +249,16 @@ export default function App() {
 
             <div className="flex flex-col gap-1.5">
               <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">{t('baseGrid')}</label>
-              <select 
+              <select
                 value={baseResolution}
                 onChange={(e) => setBaseResolution(Number(e.target.value))}
-                className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer font-bold text-gray-800 dark:text-white"
+                className="bg-white dark:bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer font-bold text-gray-900 dark:text-white"
               >
                 {GRID_RESOLUTIONS.map(res => (
-                  <option key={res} value={res} className="bg-gray-900">{res}x{res}</option>
+                  <option key={res} value={res} className="bg-white text-gray-900 dark:bg-gray-900 dark:text-white">{res}x{res}</option>
                 ))}
               </select>
             </div>
-
             <div className="flex items-center gap-3 pl-4 border-l border-white/10">
               <LanguageToggle />
               <ThemeToggle />
