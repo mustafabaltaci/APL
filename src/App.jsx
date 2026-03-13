@@ -16,10 +16,13 @@ import {
   FolderOpen
 } from 'lucide-react';
 import { generateSpriteSheet } from './utils/canvasProcessor';
+import { useLanguage } from './context/LanguageContext';
+import { ThemeToggle, LanguageToggle } from './components/Toggles';
 
 const GRID_RESOLUTIONS = [16, 32, 48, 64];
 
 export default function App() {
+  const { t } = useLanguage();
   const [packageName, setPackageName] = useState('MySpriteSheet');
   const [baseResolution, setBaseResolution] = useState(32);
   const [generateOutlines, setGenerateOutlines] = useState(false);
@@ -62,7 +65,7 @@ export default function App() {
           setAssets(restoredAssets);
         } catch (error) {
           console.error("Failed to load project:", error);
-          alert("Invalid project file.");
+          alert(t('invalidProject'));
         }
       };
       reader.readAsText(projectFile);
@@ -86,7 +89,7 @@ export default function App() {
       };
     });
     setAssets(prev => [...prev, ...newAssets]);
-  }, []);
+  }, [t]);
 
   const { getRootProps, getInputProps, isDragActive } = useDropzone({
     onDrop,
@@ -170,7 +173,7 @@ export default function App() {
       downloadAnchorNode.remove();
     } catch (error) {
       console.error('Failed to save project:', error);
-      alert('Failed to save project.');
+      alert(t('failedToSave'));
     }
   };
 
@@ -201,65 +204,70 @@ export default function App() {
       }
 
     } catch (error) {
-      console.error('Generation failed:', error);
+      console.error(t('generationFailed'), error);
     } finally {
       setIsGenerating(false);
     }
   };
 
   return (
-    <div className="min-h-screen bg-gray-950 p-6 md:p-12 text-gray-200">
-      <div className="max-w-6xl mx-auto space-y-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
         
-        {/* Header / Top Bar */}
-        <header className="flex flex-col md:flex-row md:items-center justify-between gap-6 bg-gray-900 p-6 rounded-2xl border border-gray-800 shadow-xl">
+        {/* Sticky Header with Glassmorphism */}
+        <header className="sticky top-4 z-40 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xl transition-all duration-300">
           <div className="flex items-center gap-4">
-            <div className="bg-indigo-600 p-3 rounded-lg">
+            <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/20">
               <Package className="w-8 h-8 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold text-white tracking-tight">SpritePacker</h1>
+                <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{t('title')}</h1>
                 <button 
                   onClick={() => setIsModalOpen(true)}
-                  className="p-1.5 text-gray-500 hover:text-indigo-400 hover:bg-indigo-500/10 rounded-full transition-all"
-                  title="How to Use"
+                  className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-full transition-all"
+                  title={t('howToUse')}
                 >
                   <HelpCircle className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-sm text-gray-400">Pixel Art Sprite Sheet Generator</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('description')}</p>
             </div>
           </div>
 
-          <div className="flex flex-wrap items-center gap-4">
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase text-gray-500">Package Name</label>
+          <div className="flex flex-wrap items-center gap-6">
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t('packageName')}</label>
               <input 
                 type="text" 
                 value={packageName}
                 onChange={(e) => setPackageName(e.target.value)}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
-                placeholder="Pack name..."
+                className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all w-48 font-medium shadow-sm"
+                placeholder={t('packNamePlaceholder')}
               />
             </div>
 
-            <div className="flex flex-col gap-1">
-              <label className="text-xs font-semibold uppercase text-gray-500">Base Grid</label>
+            <div className="flex flex-col gap-1.5">
+              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t('baseGrid')}</label>
               <select 
                 value={baseResolution}
                 onChange={(e) => setBaseResolution(Number(e.target.value))}
-                className="bg-gray-800 border border-gray-700 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all"
+                className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer font-medium shadow-sm"
               >
                 {GRID_RESOLUTIONS.map(res => (
                   <option key={res} value={res}>{res}x{res}</option>
                 ))}
               </select>
             </div>
+
+            <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-800">
+              <LanguageToggle />
+              <ThemeToggle />
+            </div>
           </div>
         </header>
 
-        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+        <main className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
           
           {/* Left Column: Dropzone & Asset List */}
           <div className="lg:col-span-2 space-y-6">
@@ -267,76 +275,78 @@ export default function App() {
               {...getRootProps()} 
               className={`
                 relative cursor-pointer group
-                border-2 border-dashed rounded-2xl p-12 transition-all duration-300
-                flex flex-col items-center justify-center gap-4
-                ${isDragActive ? 'border-indigo-500 bg-indigo-500/10' : 'border-gray-800 hover:border-gray-600 bg-gray-900/50'}
+                border-2 border-dashed rounded-3xl p-16 transition-all duration-500
+                flex flex-col items-center justify-center gap-6
+                ${isDragActive 
+                  ? 'border-indigo-500 bg-indigo-500/5 ring-4 ring-indigo-500/10' 
+                  : 'border-gray-200 dark:border-gray-800 hover:border-indigo-400 dark:hover:border-indigo-500/50 bg-white dark:bg-gray-900/50 shadow-sm'}
               `}
             >
               <input {...getInputProps()} />
-              <div className={`p-4 rounded-full ${isDragActive ? 'bg-indigo-600 text-white' : 'bg-gray-800 text-gray-400 group-hover:text-gray-200'}`}>
-                <Upload className="w-8 h-8" />
+              <div className={`p-6 rounded-3xl transition-all duration-500 ${isDragActive ? 'bg-indigo-600 text-white scale-110 shadow-xl' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:scale-105'}`}>
+                <Upload className="w-10 h-10" />
               </div>
-              <div className="text-center">
-                <p className="text-lg font-medium text-gray-200">
-                  {isDragActive ? 'Drop your sprites or project here' : 'Drag & drop assets or project'}
+              <div className="text-center space-y-2">
+                <p className="text-xl font-bold text-gray-900 dark:text-gray-100 transition-colors">
+                  {isDragActive ? t('dropActive') : t('dropInactive')}
                 </p>
-                <p className="text-sm text-gray-500">Supports PNG, JPG, and .spack projects</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('dropSupport')}</p>
               </div>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {assets.map((asset) => (
-                <div key={asset.id} className="bg-gray-900 border border-gray-800 rounded-xl p-4 flex flex-col gap-4">
+                <div key={asset.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex flex-col gap-5 shadow-sm hover:shadow-md transition-all duration-300 group">
                   <div className="flex gap-4 items-center">
-                    <div className="relative w-16 h-16 bg-gray-800 rounded-lg overflow-hidden flex items-center justify-center border border-gray-700">
-                      <img src={asset.preview} alt="preview" className="max-w-full max-h-full object-contain image-pixelated" />
+                    <div className="relative w-20 h-20 bg-gray-50 dark:bg-gray-850 rounded-xl overflow-hidden flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-indigo-500/30 transition-colors">
+                      <img src={asset.preview} alt="preview" className="max-w-full max-h-full object-contain image-pixelated p-2" />
                     </div>
                     
-                    <div className="flex-1 space-y-2 min-w-0">
+                    <div className="flex-1 space-y-3 min-w-0">
                       <input 
                         type="text"
                         value={asset.customName}
                         onChange={(e) => updateAssetSetting(asset.id, 'customName', e.target.value)}
-                        className="text-xs font-medium text-gray-300 bg-transparent border border-transparent hover:bg-gray-800 hover:border-gray-700 focus:bg-gray-800 focus:border-indigo-500 rounded px-1.5 py-1 -ml-1.5 outline-none w-full max-w-[160px] truncate transition-all"
-                        title="Rename asset"
+                        className="text-sm font-bold text-gray-700 dark:text-gray-300 bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:border-indigo-500 rounded-lg px-2 py-1 -ml-2 outline-none w-full truncate transition-all"
+                        title={t('renameAsset')}
                       />
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
-                          <span className="text-[10px] text-gray-500">W</span>
+                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
+                          <span className="text-[10px] font-black text-gray-400">W</span>
                           <input 
                             type="number" 
                             min="1"
                             value={asset.gridSpan.w}
                             onChange={(e) => updateGridSpan(asset.id, 'w', e.target.value)}
-                            className="w-8 bg-transparent text-xs outline-none"
+                            className="w-8 bg-transparent text-xs font-bold outline-none"
                           />
                         </div>
-                        <div className="flex items-center gap-1 bg-gray-800 rounded px-2 py-1">
-                          <span className="text-[10px] text-gray-500">H</span>
+                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
+                          <span className="text-[10px] font-black text-gray-400">H</span>
                           <input 
                             type="number" 
                             min="1"
                             value={asset.gridSpan.h}
                             onChange={(e) => updateGridSpan(asset.id, 'h', e.target.value)}
-                            className="w-8 bg-transparent text-xs outline-none"
+                            className="w-8 bg-transparent text-xs font-bold outline-none"
                           />
                         </div>
-                        <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1">
-                          <span className="text-[10px] text-indigo-400">PX</span>
+                        <div className="flex items-center gap-1.5 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-lg px-2 py-1.5 hover:bg-indigo-500/10 transition-colors">
+                          <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400">PX</span>
                           <input 
                             type="number" 
                             value={asset.padding.x}
                             onChange={(e) => updatePadding(asset.id, 'x', e.target.value)}
-                            className="w-8 bg-transparent text-xs outline-none text-indigo-200"
+                            className="w-8 bg-transparent text-xs font-bold outline-none text-indigo-600 dark:text-indigo-300"
                           />
                         </div>
-                        <div className="flex items-center gap-1 bg-indigo-500/10 border border-indigo-500/20 rounded px-2 py-1">
-                          <span className="text-[10px] text-indigo-400">PY</span>
+                        <div className="flex items-center gap-1.5 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-lg px-2 py-1.5 hover:bg-indigo-500/10 transition-colors">
+                          <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400">PY</span>
                           <input 
                             type="number" 
                             value={asset.padding.y}
                             onChange={(e) => updatePadding(asset.id, 'y', e.target.value)}
-                            className="w-8 bg-transparent text-xs outline-none text-indigo-200"
+                            className="w-8 bg-transparent text-xs font-bold outline-none text-indigo-600 dark:text-indigo-300"
                           />
                         </div>
                       </div>
@@ -344,15 +354,16 @@ export default function App() {
 
                     <button 
                       onClick={() => removeAsset(asset.id)}
-                      className="p-2 text-gray-500 hover:text-red-400 transition-colors"
+                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all self-start"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
 
                   {/* Per-Asset Background Removal Settings */}
-                  <div className="pt-3 border-t border-gray-800 flex flex-col gap-3">
-                    <label className="flex items-center gap-3 cursor-pointer group">
+                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-4">
+                    <label className="flex items-center justify-between cursor-pointer group">
+                      <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{t('clearBg')}</span>
                       <div className="relative flex items-center">
                         <input 
                           type="checkbox" 
@@ -360,22 +371,21 @@ export default function App() {
                           onChange={(e) => updateAssetSetting(asset.id, 'removeBg', e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-8 h-4 bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
-                        <div className="absolute left-1 top-1 w-2 h-2 bg-gray-400 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
+                        <div className="w-10 h-5 bg-gray-200 dark:bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
+                        <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transition-all shadow-sm"></div>
                       </div>
-                      <span className="text-[10px] font-medium text-gray-400 uppercase tracking-wider">Clear Background</span>
                     </label>
 
                     {asset.removeBg && (
-                      <div className="flex items-center gap-4 animate-in fade-in duration-200">
-                        <span className="text-[10px] font-semibold text-gray-500 uppercase whitespace-nowrap">Tol: {asset.tolerance}</span>
+                      <div className="flex items-center gap-4 animate-in slide-in-from-top-2 duration-300">
+                        <span className="text-[10px] font-black text-gray-400 uppercase whitespace-nowrap">{t('tolerance')} {asset.tolerance}</span>
                         <input 
                           type="range" 
                           min="0" 
                           max="100" 
                           value={asset.tolerance} 
                           onChange={(e) => updateAssetSetting(asset.id, 'tolerance', parseInt(e.target.value))}
-                          className="flex-1 h-1 bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-500"
+                          className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
                         />
                       </div>
                     )}
@@ -386,15 +396,18 @@ export default function App() {
           </div>
 
           {/* Right Column: Global Settings & Export */}
-          <div className="space-y-6">
-            <div className="bg-gray-900 border border-gray-800 rounded-2xl p-6 space-y-6 shadow-lg">
-              <div className="flex items-center gap-2 border-b border-gray-800 pb-4">
-                <Settings2 className="w-5 h-5 text-indigo-400" />
-                <h2 className="font-bold text-lg">Configuration</h2>
+          <div className="space-y-6 lg:sticky lg:top-36 self-start transition-all duration-300">
+            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-8 space-y-8 shadow-xl">
+              <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-5">
+                <div className="p-2 bg-indigo-500/10 rounded-lg">
+                  <Settings2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+                </div>
+                <h2 className="font-bold text-xl">{t('configuration')}</h2>
               </div>
 
-              <div className="space-y-4">
-                <label className="flex items-center gap-3 cursor-pointer group pb-2 border-b border-gray-800/50">
+              <div className="space-y-6">
+                <label className="flex items-center justify-between cursor-pointer group pb-4 border-b border-gray-50 dark:border-gray-800/50">
+                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('generateOutlines')}</span>
                   <div className="relative flex items-center">
                     <input 
                       type="checkbox" 
@@ -402,42 +415,41 @@ export default function App() {
                       onChange={(e) => setGenerateOutlines(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-10 h-6 bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
-                    <div className="absolute left-1 top-1 w-4 h-4 bg-gray-400 rounded-full peer-checked:translate-x-4 peer-checked:bg-white transition-all"></div>
+                    <div className="w-12 h-6 bg-gray-200 dark:bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
+                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-6 transition-all shadow-md"></div>
                   </div>
-                  <span className="text-sm font-medium text-gray-300">Generate Hover Outlines</span>
                 </label>
 
-                <div className="p-4 bg-blue-500/10 border border-blue-500/20 rounded-lg flex gap-3">
-                  <Grid3X3 className="w-5 h-5 text-blue-400 shrink-0" />
-                  <p className="text-xs text-blue-200 leading-relaxed">
-                    Packing logic will use <strong>Nearest Neighbor</strong> scaling to preserve pixel crispness.
+                <div className="p-5 bg-blue-50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/20 rounded-2xl flex gap-4">
+                  <Grid3X3 className="w-6 h-6 text-blue-500 shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed font-medium">
+                    {t('logicInfo')}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-4 space-y-3">
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Total Assets</span>
-                  <span className="font-mono text-white">{assets.length}</span>
+              <div className="pt-2 space-y-4">
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-850 px-4 py-3 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-all">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{t('totalAssets')}</span>
+                  <span className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400">{assets.length}</span>
                 </div>
-                <div className="flex justify-between text-sm">
-                  <span className="text-gray-400">Target Grid</span>
-                  <span className="font-mono text-white">{baseResolution}px</span>
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-850 px-4 py-3 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-all">
+                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{t('targetGrid')}</span>
+                  <span className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400">{baseResolution}px</span>
                 </div>
               </div>
 
-              <div className="grid grid-cols-2 gap-3 pt-4 border-t border-gray-800/50">
+              <div className="grid grid-cols-2 gap-4 pt-2">
                 <button 
                   onClick={handleSaveProject}
-                  className="py-3 bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm"
+                  className="py-3.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-200 text-sm font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
                 >
-                  <Save className="w-4 h-4 text-indigo-400" />
-                  Save Project
+                  <Save className="w-4 h-4 text-indigo-500" />
+                  {t('saveProject')}
                 </button>
-                <label className="cursor-pointer py-3 bg-gray-800 hover:bg-gray-700 text-gray-200 text-sm font-semibold rounded-xl flex items-center justify-center gap-2 transition-all shadow-sm">
-                  <FolderOpen className="w-4 h-4 text-indigo-400" />
-                  Load Project
+                <label className="cursor-pointer py-3.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-200 text-sm font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-center">
+                  <FolderOpen className="w-4 h-4 text-indigo-500" />
+                  {t('loadProject')}
                   <input
                     type="file"
                     accept=".spack,.json"
@@ -445,7 +457,7 @@ export default function App() {
                     onChange={(e) => {
                       if (e.target.files && e.target.files.length > 0) {
                         onDrop(Array.from(e.target.files));
-                        e.target.value = null; // reset to allow loading the same file again
+                        e.target.value = null; 
                       }
                     }}
                   />
@@ -456,27 +468,27 @@ export default function App() {
                 onClick={handleGenerate}
                 disabled={assets.length === 0 || isGenerating}
                 className={`
-                  w-full py-4 rounded-xl font-bold flex items-center justify-center gap-3 transition-all
+                  w-full py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98]
                   ${assets.length === 0 || isGenerating 
-                    ? 'bg-gray-800 text-gray-500 cursor-not-allowed' 
-                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-lg shadow-indigo-500/20'}
+                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed' 
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/30 dark:shadow-indigo-900/40 hover:-translate-y-1'}
                 `}
               >
                 {isGenerating ? (
-                  <div className="w-6 h-6 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-7 h-7 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <Download className="w-5 h-5" />
-                    Generate & Download
+                    <Download className="w-6 h-6" />
+                    {t('generateDownload')}
                   </>
                 )}
               </button>
             </div>
 
             {assets.length > 0 && (
-              <div className="flex items-center gap-2 text-xs text-gray-500 justify-center">
+              <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 justify-center font-bold animate-pulse">
                 <CheckCircle2 className="w-4 h-4 text-green-500" />
-                Ready to generate
+                {t('readyToGenerate')}
               </div>
             )}
           </div>
@@ -486,58 +498,60 @@ export default function App() {
       
       {/* How to Use Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 sm:p-6">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
           <div 
-            className="absolute inset-0 bg-black/80 backdrop-blur-sm animate-in fade-in duration-300"
+            className="absolute inset-0 bg-gray-950/60 backdrop-blur-xl animate-in fade-in duration-500"
             onClick={() => setIsModalOpen(false)}
           />
-          <div className="relative bg-gray-900 border border-gray-800 rounded-3xl w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 duration-300">
-            <div className="flex items-center justify-between p-6 border-b border-gray-800">
-              <div className="flex items-center gap-3">
-                <HelpCircle className="w-6 h-6 text-indigo-400" />
-                <h2 className="text-xl font-bold text-white">How to Use SpritePacker</h2>
+          <div className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
+            <div className="flex items-center justify-between p-8 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-850/50">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-indigo-600 rounded-2xl">
+                  <HelpCircle className="w-7 h-7 text-white" />
+                </div>
+                <h2 className="text-2xl font-black text-gray-900 dark:text-white">{t('modalTitle')}</h2>
               </div>
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="p-2 text-gray-500 hover:text-white transition-colors"
+                className="p-3 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-all"
               >
-                <X className="w-6 h-6" />
+                <X className="w-7 h-7" />
               </button>
             </div>
             
-            <div className="p-8 space-y-6 max-h-[70vh] overflow-y-auto">
-              <p className="text-gray-300 leading-relaxed">
-                A client-side, privacy-first pipeline to generate production-ready sprite sheets for your 2D games.
+            <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
+              <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
+                {t('modalSubtitle')}
               </p>
               
-              <div className="space-y-6">
+              <div className="grid gap-8">
                 {[
-                  { title: "Set Base Grid", text: "Choose the core resolution for your game (e.g., 48x48)." },
-                  { title: "Drag & Drop", text: "Upload your raw pixel art assets." },
-                  { title: "Configure Spans & Padding", text: "Set grid blocks (WxH) and add PX/PY margins for perfect centering after auto-trimming." },
-                  { title: "Clean Backgrounds", text: "Instantly remove backgrounds with Euclidean tolerance for anti-aliased edges." },
-                  { title: "Tiled & Outlines", text: "Get a production-ready .tsx tileset and an optional _outlines.png for hover effects." },
-                  { title: "Generate", text: "Instantly pack, scale (Nearest Neighbor), and download your game-ready assets." }
+                  { title: t('step1Title'), text: t('step1Text') },
+                  { title: t('step2Title'), text: t('step2Text') },
+                  { title: t('step3Title'), text: t('step3Text') },
+                  { title: t('step4Title'), text: t('step4Text') },
+                  { title: t('step5Title'), text: t('step5Text') },
+                  { title: t('step6Title'), text: t('step6Text') }
                 ].map((step, i) => (
-                  <div key={i} className="flex gap-4">
-                    <div className="flex-shrink-0 w-8 h-8 rounded-full bg-indigo-500/10 border border-indigo-500/20 flex items-center justify-center text-indigo-400 font-bold text-sm">
+                  <div key={i} className="flex gap-6 group">
+                    <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 group-hover:scale-110 shadow-sm">
                       {i + 1}
                     </div>
-                    <div>
-                      <h3 className="font-bold text-white mb-1">{step.title}</h3>
-                      <p className="text-sm text-gray-400 leading-relaxed">{step.text}</p>
+                    <div className="space-y-1.5">
+                      <h3 className="font-black text-lg text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{step.title}</h3>
+                      <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-medium">{step.text}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="p-6 bg-gray-800/50 border-t border-gray-800 flex justify-end">
+            <div className="p-8 bg-gray-50/50 dark:bg-gray-850/50 border-t border-gray-100 dark:border-gray-800 flex justify-end">
               <button 
                 onClick={() => setIsModalOpen(false)}
-                className="px-6 py-2 bg-indigo-600 hover:bg-indigo-500 text-white font-bold rounded-xl transition-all"
+                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-600/20 hover:-translate-y-1 active:scale-95"
               >
-                Got it!
+                {t('gotIt')}
               </button>
             </div>
           </div>
@@ -545,15 +559,15 @@ export default function App() {
       )}
 
       {/* Footer Signature */}
-      <footer className="w-full py-8 text-center mt-12">
-        <div className="inline-flex items-center gap-1.5 text-xs text-gray-500 font-medium tracking-wide">
-          <span>Developed by Mustafa Baltacı</span>
-          <span className="text-gray-700">x</span>
-          <div className="flex items-center gap-1.5 text-indigo-400/80">
-            <svg className="w-3.5 h-3.5 fill-current" viewBox="0 0 24 24">
+      <footer className="w-full py-12 text-center mt-12 border-t border-gray-100 dark:border-gray-900">
+        <div className="inline-flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 font-bold tracking-widest uppercase">
+          <span>{t('developedBy')}</span>
+          <span className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full"></span>
+          <div className="flex items-center gap-2 text-indigo-500/80">
+            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
               <path d="M12,2L14.5,9.5L22,12L14.5,14.5L12,22L9.5,14.5L2,12L9.5,9.5L12,2Z" />
             </svg>
-            <span className="uppercase tracking-[0.2em] text-[10px]">Gemini</span>
+            <span className="tracking-[0.3em]">Gemini</span>
           </div>
         </div>
       </footer>
@@ -562,6 +576,19 @@ export default function App() {
         .image-pixelated {
           image-rendering: pixelated;
           image-rendering: crisp-edges;
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: transparent;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #e2e8f0;
+          border-radius: 10px;
+        }
+        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #1e293b;
         }
       `}</style>
     </div>
