@@ -31,7 +31,6 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
 
   const onDrop = useCallback(async (acceptedFiles) => {
-    // Check if a project file is dropped
     const projectFile = acceptedFiles.find(file => file.name.endsWith('.spack') || file.name.endsWith('.json'));
     if (projectFile) {
       const reader = new FileReader();
@@ -182,21 +181,13 @@ export default function App() {
     setIsGenerating(true);
     try {
       const { canvas, packing } = await generateSpriteSheet(assets, baseResolution, { generateOutlines });
-      
-      // 1. Download Sprite Sheet PNG
       canvas.toBlob((blob) => downloadFile(blob, `${packageName}.png`));
-
-      // 2. Generate and Download Tiled .tsx
       const tileCount = packing.placements.length;
       const columns = Math.floor(packing.width / baseResolution);
-      const tsxContent = `<?xml version="1.0" encoding="UTF-8"?>
-<tileset version="1.10" tiledversion="1.10.2" name="${packageName}" tilewidth="${baseResolution}" tileheight="${baseResolution}" tilecount="${tileCount}" columns="${columns}">
-  <image source="${packageName}.png" width="${packing.width}" height="${packing.height}"/>
-</tileset>`;
+      const tsxContent = `<?xml version="1.0" encoding="UTF-8"?>\n<tileset version="1.10" tiledversion="1.10.2" name="${packageName}" tilewidth="${baseResolution}" tileheight="${baseResolution}" tilecount="${tileCount}" columns="${columns}">\n  <image source="${packageName}.png" width="${packing.width}" height="${packing.height}"/>\n</tileset>`;
       const tsxBlob = new Blob([tsxContent], { type: 'text/xml' });
       downloadFile(tsxBlob, `${packageName}.tsx`);
 
-      // 3. Generate and Download Outlines if enabled
       if (generateOutlines) {
         const { generateHoverOutlines } = await import('./utils/canvasProcessor');
         const outlineCanvas = generateHoverOutlines(canvas);
@@ -210,57 +201,66 @@ export default function App() {
     }
   };
 
+  const liquidGlassClass = "backdrop-blur-3xl bg-white/10 dark:bg-gray-950/40 border border-white/20 dark:border-white/10 shadow-[0_25px_50px_-12px_rgba(0,0,0,0.5),_inset_0_1px_1px_rgba(255,255,255,0.1)] transition-all duration-500";
+  const nestedGlassClass = "bg-white/5 dark:bg-white/5 border border-white/10 shadow-[inset_0_1px_1px_rgba(255,255,255,0.05)] rounded-2xl transition-all duration-300";
+
   return (
-    <div className="min-h-screen bg-gray-50 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-300">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8">
+    <div className="min-h-screen bg-gray-100 dark:bg-gray-950 text-gray-900 dark:text-gray-100 transition-colors duration-500 antialiased selection:bg-indigo-500/30">
+      {/* Background accents for depth */}
+      <div className="fixed inset-0 overflow-hidden pointer-events-none">
+        <div className="absolute top-[-10%] left-[-10%] w-[40%] h-[40%] bg-indigo-600/20 rounded-full blur-[120px] animate-pulse" />
+        <div className="absolute bottom-[-10%] right-[-10%] w-[40%] h-[40%] bg-purple-600/20 rounded-full blur-[120px] animate-pulse" style={{ animationDelay: '2s' }} />
+      </div>
+
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 relative z-10">
         
-        {/* Sticky Header with Glassmorphism */}
-        <header className="sticky top-4 z-40 flex flex-col md:flex-row md:items-center justify-between gap-6 bg-white/70 dark:bg-gray-900/70 backdrop-blur-md p-6 rounded-3xl border border-gray-200 dark:border-gray-800 shadow-xl transition-all duration-300">
+        {/* Liquid Glass Header */}
+        <header className={`sticky top-4 z-40 flex flex-col md:flex-row md:items-center justify-between gap-6 p-6 rounded-[2.5rem] ${liquidGlassClass}`}>
           <div className="flex items-center gap-4">
-            <div className="bg-indigo-600 p-3 rounded-2xl shadow-lg shadow-indigo-500/20">
+            <div className="bg-indigo-600 p-3 rounded-2xl shadow-[0_0_20px_rgba(79,70,229,0.4)] ring-1 ring-white/20">
               <Package className="w-8 h-8 text-white" />
             </div>
             <div>
               <div className="flex items-center gap-3">
-                <h1 className="text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{t('title')}</h1>
+                <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white drop-shadow-sm">{t('title')}</h1>
                 <button 
                   onClick={() => setIsModalOpen(true)}
-                  className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-indigo-500/10 rounded-full transition-all"
+                  className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-white/10 rounded-full transition-all"
                   title={t('howToUse')}
                 >
                   <HelpCircle className="w-5 h-5" />
                 </button>
               </div>
-              <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('description')}</p>
+              <p className="text-sm text-gray-500 dark:text-gray-400 font-bold tracking-tight">{t('description')}</p>
             </div>
           </div>
 
           <div className="flex flex-wrap items-center gap-6">
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t('packageName')}</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">{t('packageName')}</label>
               <input 
                 type="text" 
                 value={packageName}
                 onChange={(e) => setPackageName(e.target.value)}
-                className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all w-48 font-medium shadow-sm"
+                className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 focus:border-transparent outline-none transition-all w-48 font-bold text-gray-800 dark:text-white"
                 placeholder={t('packNamePlaceholder')}
               />
             </div>
 
             <div className="flex flex-col gap-1.5">
-              <label className="text-[10px] font-bold uppercase tracking-wider text-gray-400 dark:text-gray-500">{t('baseGrid')}</label>
+              <label className="text-[10px] font-black uppercase tracking-widest text-gray-400 dark:text-gray-500">{t('baseGrid')}</label>
               <select 
                 value={baseResolution}
                 onChange={(e) => setBaseResolution(Number(e.target.value))}
-                className="bg-gray-100 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer font-medium shadow-sm"
+                className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl px-4 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all cursor-pointer font-bold text-gray-800 dark:text-white"
               >
                 {GRID_RESOLUTIONS.map(res => (
-                  <option key={res} value={res}>{res}x{res}</option>
+                  <option key={res} value={res} className="bg-gray-900">{res}x{res}</option>
                 ))}
               </select>
             </div>
 
-            <div className="flex items-center gap-3 pl-4 border-l border-gray-200 dark:border-gray-800">
+            <div className="flex items-center gap-3 pl-4 border-l border-white/10">
               <LanguageToggle />
               <ThemeToggle />
             </div>
@@ -269,37 +269,38 @@ export default function App() {
 
         <main className="grid grid-cols-1 lg:grid-cols-3 gap-8 pb-12">
           
-          {/* Left Column: Dropzone & Asset List */}
           <div className="lg:col-span-2 space-y-6">
+            {/* Liquid Glass Dropzone */}
             <div 
               {...getRootProps()} 
               className={`
                 relative cursor-pointer group
-                border-2 border-dashed rounded-3xl p-16 transition-all duration-500
+                border-2 border-dashed rounded-[3rem] p-16 transition-all duration-700
                 flex flex-col items-center justify-center gap-6
                 ${isDragActive 
-                  ? 'border-indigo-500 bg-indigo-500/5 ring-4 ring-indigo-500/10' 
-                  : 'border-gray-200 dark:border-gray-800 hover:border-indigo-400 dark:hover:border-indigo-500/50 bg-white dark:bg-gray-900/50 shadow-sm'}
+                  ? 'border-indigo-500 bg-indigo-500/10 ring-8 ring-indigo-500/5' 
+                  : `border-white/10 hover:border-indigo-500/50 ${liquidGlassClass}`}
               `}
             >
               <input {...getInputProps()} />
-              <div className={`p-6 rounded-3xl transition-all duration-500 ${isDragActive ? 'bg-indigo-600 text-white scale-110 shadow-xl' : 'bg-gray-100 dark:bg-gray-800 text-gray-400 group-hover:text-indigo-500 dark:group-hover:text-indigo-400 group-hover:scale-105'}`}>
-                <Upload className="w-10 h-10" />
+              <div className={`p-8 rounded-[2rem] transition-all duration-700 shadow-2xl ${isDragActive ? 'bg-indigo-600 text-white scale-110' : 'bg-white/10 dark:bg-black/20 text-gray-400 group-hover:text-indigo-400 group-hover:scale-105 group-hover:shadow-[0_0_30px_rgba(79,70,229,0.3)]'}`}>
+                <Upload className="w-12 h-12" />
               </div>
               <div className="text-center space-y-2">
-                <p className="text-xl font-bold text-gray-900 dark:text-gray-100 transition-colors">
+                <p className="text-2xl font-black text-gray-900 dark:text-white tracking-tight">
                   {isDragActive ? t('dropActive') : t('dropInactive')}
                 </p>
-                <p className="text-sm text-gray-500 dark:text-gray-400 font-medium">{t('dropSupport')}</p>
+                <p className="text-sm text-gray-500 dark:text-gray-400 font-black tracking-widest uppercase">{t('dropSupport')}</p>
               </div>
             </div>
 
+            {/* Asset Tiles */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
               {assets.map((asset) => (
-                <div key={asset.id} className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-2xl p-5 flex flex-col gap-5 shadow-sm hover:shadow-md transition-all duration-300 group">
+                <div key={asset.id} className={`rounded-[2rem] p-6 flex flex-col gap-6 group ${liquidGlassClass} hover:translate-y-[-4px] hover:shadow-[0_30px_60px_-15px_rgba(0,0,0,0.6)]`}>
                   <div className="flex gap-4 items-center">
-                    <div className="relative w-20 h-20 bg-gray-50 dark:bg-gray-850 rounded-xl overflow-hidden flex items-center justify-center border border-gray-100 dark:border-gray-800 group-hover:border-indigo-500/30 transition-colors">
-                      <img src={asset.preview} alt="preview" className="max-w-full max-h-full object-contain image-pixelated p-2" />
+                    <div className="relative w-24 h-24 bg-black/30 rounded-2xl overflow-hidden flex items-center justify-center border border-white/10 group-hover:border-indigo-500/40 transition-colors shadow-inner">
+                      <img src={asset.preview} alt="preview" className="max-w-full max-h-full object-contain image-pixelated p-2 drop-shadow-[0_0_8px_rgba(255,255,255,0.2)]" />
                     </div>
                     
                     <div className="flex-1 space-y-3 min-w-0">
@@ -307,63 +308,47 @@ export default function App() {
                         type="text"
                         value={asset.customName}
                         onChange={(e) => updateAssetSetting(asset.id, 'customName', e.target.value)}
-                        className="text-sm font-bold text-gray-700 dark:text-gray-300 bg-transparent border border-transparent hover:bg-gray-50 dark:hover:bg-gray-800 hover:border-gray-200 dark:hover:border-gray-700 focus:bg-white dark:focus:bg-gray-800 focus:border-indigo-500 rounded-lg px-2 py-1 -ml-2 outline-none w-full truncate transition-all"
+                        className="text-sm font-black text-gray-900 dark:text-white bg-transparent border border-transparent hover:bg-white/10 hover:border-white/10 focus:bg-black/20 focus:border-indigo-500 rounded-lg px-2 py-1 -ml-2 outline-none w-full truncate transition-all shadow-none"
                         title={t('renameAsset')}
                       />
                       <div className="flex flex-wrap items-center gap-2">
-                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
-                          <span className="text-[10px] font-black text-gray-400">W</span>
-                          <input 
-                            type="number" 
-                            min="1"
-                            value={asset.gridSpan.w}
-                            onChange={(e) => updateGridSpan(asset.id, 'w', e.target.value)}
-                            className="w-8 bg-transparent text-xs font-bold outline-none"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg px-2 py-1.5 border border-transparent hover:border-gray-200 dark:hover:border-gray-700 transition-colors">
-                          <span className="text-[10px] font-black text-gray-400">H</span>
-                          <input 
-                            type="number" 
-                            min="1"
-                            value={asset.gridSpan.h}
-                            onChange={(e) => updateGridSpan(asset.id, 'h', e.target.value)}
-                            className="w-8 bg-transparent text-xs font-bold outline-none"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-lg px-2 py-1.5 hover:bg-indigo-500/10 transition-colors">
-                          <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400">PX</span>
-                          <input 
-                            type="number" 
-                            value={asset.padding.x}
-                            onChange={(e) => updatePadding(asset.id, 'x', e.target.value)}
-                            className="w-8 bg-transparent text-xs font-bold outline-none text-indigo-600 dark:text-indigo-300"
-                          />
-                        </div>
-                        <div className="flex items-center gap-1.5 bg-indigo-500/5 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 rounded-lg px-2 py-1.5 hover:bg-indigo-500/10 transition-colors">
-                          <span className="text-[10px] font-black text-indigo-500 dark:text-indigo-400">PY</span>
-                          <input 
-                            type="number" 
-                            value={asset.padding.y}
-                            onChange={(e) => updatePadding(asset.id, 'y', e.target.value)}
-                            className="w-8 bg-transparent text-xs font-bold outline-none text-indigo-600 dark:text-indigo-300"
-                          />
-                        </div>
+                        {['W', 'H'].map((dim, i) => (
+                          <div key={dim} className="flex items-center gap-1.5 bg-black/20 rounded-lg px-2 py-1.5 border border-white/5">
+                            <span className="text-[10px] font-black text-gray-500">{dim}</span>
+                            <input 
+                              type="number" 
+                              min="1"
+                              value={i === 0 ? asset.gridSpan.w : asset.gridSpan.h}
+                              onChange={(e) => i === 0 ? updateGridSpan(asset.id, 'w', e.target.value) : updateGridSpan(asset.id, 'h', e.target.value)}
+                              className="w-8 bg-transparent text-xs font-bold outline-none text-white"
+                            />
+                          </div>
+                        ))}
+                        {['PX', 'PY'].map((pad, i) => (
+                          <div key={pad} className="flex items-center gap-1.5 bg-indigo-500/10 border border-indigo-500/20 rounded-lg px-2 py-1.5 shadow-[0_0_10px_rgba(79,70,229,0.1)]">
+                            <span className="text-[10px] font-black text-indigo-400">{pad}</span>
+                            <input 
+                              type="number" 
+                              value={i === 0 ? asset.padding.x : asset.padding.y}
+                              onChange={(e) => i === 0 ? updatePadding(asset.id, 'x', e.target.value) : updatePadding(asset.id, 'y', e.target.value)}
+                              className="w-8 bg-transparent text-xs font-bold outline-none text-indigo-300"
+                            />
+                          </div>
+                        ))}
                       </div>
                     </div>
 
                     <button 
                       onClick={() => removeAsset(asset.id)}
-                      className="p-2 text-gray-400 hover:text-red-500 hover:bg-red-50 dark:hover:bg-red-500/10 rounded-xl transition-all self-start"
+                      className="p-2.5 text-gray-500 hover:text-red-400 hover:bg-red-500/10 rounded-xl transition-all self-start shadow-sm"
                     >
                       <Trash2 className="w-5 h-5" />
                     </button>
                   </div>
 
-                  {/* Per-Asset Background Removal Settings */}
-                  <div className="pt-4 border-t border-gray-100 dark:border-gray-800 flex flex-col gap-4">
+                  <div className="pt-5 border-t border-white/10 flex flex-col gap-4">
                     <label className="flex items-center justify-between cursor-pointer group">
-                      <span className="text-[10px] font-bold text-gray-500 dark:text-gray-400 uppercase tracking-widest">{t('clearBg')}</span>
+                      <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">{t('clearBg')}</span>
                       <div className="relative flex items-center">
                         <input 
                           type="checkbox" 
@@ -371,21 +356,21 @@ export default function App() {
                           onChange={(e) => updateAssetSetting(asset.id, 'removeBg', e.target.checked)}
                           className="sr-only peer"
                         />
-                        <div className="w-10 h-5 bg-gray-200 dark:bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
-                        <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transition-all shadow-sm"></div>
+                        <div className="w-12 h-6 bg-black/30 rounded-full peer peer-checked:bg-indigo-600 transition-all ring-1 ring-white/10"></div>
+                        <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-6 transition-all shadow-md"></div>
                       </div>
                     </label>
 
                     {asset.removeBg && (
-                      <div className="flex items-center gap-4 animate-in slide-in-from-top-2 duration-300">
-                        <span className="text-[10px] font-black text-gray-400 uppercase whitespace-nowrap">{t('tolerance')} {asset.tolerance}</span>
+                      <div className="flex items-center gap-4 animate-in slide-in-from-top-2 duration-500">
+                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('tolerance')} {asset.tolerance}</span>
                         <input 
                           type="range" 
                           min="0" 
                           max="100" 
                           value={asset.tolerance} 
                           onChange={(e) => updateAssetSetting(asset.id, 'tolerance', parseInt(e.target.value))}
-                          className="flex-1 h-1.5 bg-gray-100 dark:bg-gray-800 rounded-lg appearance-none cursor-pointer accent-indigo-600"
+                          className="flex-1 h-1.5 bg-black/30 rounded-full appearance-none cursor-pointer accent-indigo-500 ring-1 ring-white/5"
                         />
                       </div>
                     )}
@@ -395,19 +380,19 @@ export default function App() {
             </div>
           </div>
 
-          {/* Right Column: Global Settings & Export */}
-          <div className="space-y-6 lg:sticky lg:top-36 self-start transition-all duration-300">
-            <div className="bg-white dark:bg-gray-900 border border-gray-200 dark:border-gray-800 rounded-3xl p-8 space-y-8 shadow-xl">
-              <div className="flex items-center gap-3 border-b border-gray-100 dark:border-gray-800 pb-5">
-                <div className="p-2 bg-indigo-500/10 rounded-lg">
-                  <Settings2 className="w-5 h-5 text-indigo-600 dark:text-indigo-400" />
+          <div className="space-y-6 lg:sticky lg:top-36 self-start">
+            {/* Liquid Glass Configuration Panel */}
+            <div className={`rounded-[2.5rem] p-8 space-y-8 ${liquidGlassClass}`}>
+              <div className="flex items-center gap-3 border-b border-white/10 pb-6">
+                <div className="p-2.5 bg-indigo-500/10 rounded-xl shadow-inner border border-white/5">
+                  <Settings2 className="w-6 h-6 text-indigo-400 shadow-[0_0_10px_rgba(129,140,248,0.5)]" />
                 </div>
-                <h2 className="font-bold text-xl">{t('configuration')}</h2>
+                <h2 className="font-black text-2xl tracking-tight">{t('configuration')}</h2>
               </div>
 
               <div className="space-y-6">
-                <label className="flex items-center justify-between cursor-pointer group pb-4 border-b border-gray-50 dark:border-gray-800/50">
-                  <span className="text-sm font-bold text-gray-700 dark:text-gray-300">{t('generateOutlines')}</span>
+                <label className="flex items-center justify-between cursor-pointer group pb-4 border-b border-white/5">
+                  <span className="text-sm font-black text-gray-700 dark:text-gray-300 tracking-tight">{t('generateOutlines')}</span>
                   <div className="relative flex items-center">
                     <input 
                       type="checkbox" 
@@ -415,52 +400,42 @@ export default function App() {
                       onChange={(e) => setGenerateOutlines(e.target.checked)}
                       className="sr-only peer"
                     />
-                    <div className="w-12 h-6 bg-gray-200 dark:bg-gray-800 rounded-full peer peer-checked:bg-indigo-600 transition-all"></div>
-                    <div className="absolute left-1 top-1 w-4 h-4 bg-white rounded-full peer-checked:translate-x-6 transition-all shadow-md"></div>
+                    <div className="w-14 h-7 bg-black/30 rounded-full peer peer-checked:bg-indigo-600 transition-all ring-1 ring-white/10"></div>
+                    <div className="absolute left-1 top-1 w-5 h-5 bg-white rounded-full peer-checked:translate-x-7 transition-all shadow-xl"></div>
                   </div>
                 </label>
 
-                <div className="p-5 bg-blue-50 dark:bg-blue-500/5 border border-blue-100 dark:border-blue-500/20 rounded-2xl flex gap-4">
-                  <Grid3X3 className="w-6 h-6 text-blue-500 shrink-0 mt-0.5" />
-                  <p className="text-xs text-blue-700 dark:text-blue-300 leading-relaxed font-medium">
+                <div className="p-6 bg-blue-500/5 border border-blue-500/20 rounded-[1.5rem] flex gap-4 shadow-inner backdrop-blur-sm">
+                  <Grid3X3 className="w-7 h-7 text-blue-400 shrink-0 mt-0.5" />
+                  <p className="text-xs text-blue-200 leading-relaxed font-bold tracking-tight">
                     {t('logicInfo')}
                   </p>
                 </div>
               </div>
 
-              <div className="pt-2 space-y-4">
-                <div className="flex justify-between items-center bg-gray-50 dark:bg-white/5 px-4 py-3 rounded-2xl border border-gray-200 dark:border-white/10 transition-all hover:bg-gray-100 dark:hover:bg-white/10 group">
-                  <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('totalAssets')}</span>
-                  <span className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{assets.length}</span>
+              <div className="space-y-4">
+                <div className={`flex justify-between items-center px-5 py-4 ${nestedGlassClass} hover:bg-white/10 group`}>
+                  <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">{t('totalAssets')}</span>
+                  <span className="text-xl font-black text-indigo-400 drop-shadow-[0_0_10px_rgba(129,140,248,0.3)] group-hover:scale-110 transition-transform">{assets.length}</span>
                 </div>
-                <div className="flex justify-between items-center bg-gray-50 dark:bg-white/5 px-4 py-3 rounded-2xl border border-gray-200 dark:border-white/10 transition-all hover:bg-gray-100 dark:hover:bg-white/10 group">
-                  <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('targetGrid')}</span>
-                  <span className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{baseResolution}px</span>
+                <div className={`flex justify-between items-center px-5 py-4 ${nestedGlassClass} hover:bg-white/10 group`}>
+                  <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">{t('targetGrid')}</span>
+                  <span className="text-xl font-black text-indigo-400 drop-shadow-[0_0_10px_rgba(129,140,248,0.3)] group-hover:scale-110 transition-transform">{baseResolution}px</span>
                 </div>
               </div>
 
               <div className="grid grid-cols-2 gap-4 pt-2">
                 <button 
                   onClick={handleSaveProject}
-                  className="py-3.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-200 text-sm font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95"
+                  className="py-4 bg-white/10 dark:bg-black/20 hover:bg-white/20 text-gray-700 dark:text-white text-sm font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 border border-white/5"
                 >
-                  <Save className="w-4 h-4 text-indigo-500" />
+                  <Save className="w-4 h-4 text-indigo-400" />
                   {t('saveProject')}
                 </button>
-                <label className="cursor-pointer py-3.5 bg-gray-100 dark:bg-gray-800 hover:bg-gray-200 dark:hover:bg-gray-750 text-gray-700 dark:text-gray-200 text-sm font-bold rounded-2xl flex items-center justify-center gap-2 transition-all shadow-sm active:scale-95 text-center">
-                  <FolderOpen className="w-4 h-4 text-indigo-500" />
+                <label className="cursor-pointer py-4 bg-white/10 dark:bg-black/20 hover:bg-white/20 text-gray-700 dark:text-white text-sm font-black rounded-2xl flex items-center justify-center gap-2 transition-all shadow-lg active:scale-95 text-center border border-white/5">
+                  <FolderOpen className="w-4 h-4 text-indigo-400" />
                   {t('loadProject')}
-                  <input
-                    type="file"
-                    accept=".spack,.json"
-                    className="hidden"
-                    onChange={(e) => {
-                      if (e.target.files && e.target.files.length > 0) {
-                        onDrop(Array.from(e.target.files));
-                        e.target.value = null; 
-                      }
-                    }}
-                  />
+                  <input type="file" accept=".spack,.json" className="hidden" onChange={(e) => { if (e.target.files?.length) { onDrop(Array.from(e.target.files)); e.target.value = null; } }} />
                 </label>
               </div>
 
@@ -468,17 +443,17 @@ export default function App() {
                 onClick={handleGenerate}
                 disabled={assets.length === 0 || isGenerating}
                 className={`
-                  w-full py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 transition-all duration-300 active:scale-[0.98]
+                  w-full py-6 rounded-[1.5rem] font-black text-xl flex items-center justify-center gap-3 transition-all duration-500 active:scale-[0.98]
                   ${assets.length === 0 || isGenerating 
-                    ? 'bg-gray-100 dark:bg-gray-800 text-gray-400 cursor-not-allowed' 
-                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-xl shadow-indigo-600/30 dark:shadow-indigo-900/40 hover:-translate-y-1'}
+                    ? 'bg-black/20 text-gray-600 cursor-not-allowed opacity-50' 
+                    : 'bg-indigo-600 hover:bg-indigo-500 text-white shadow-[0_20px_40px_rgba(79,70,229,0.3)] hover:-translate-y-1 ring-1 ring-white/20'}
                 `}
               >
                 {isGenerating ? (
-                  <div className="w-7 h-7 border-3 border-white/30 border-t-white rounded-full animate-spin"></div>
+                  <div className="w-8 h-8 border-4 border-white/30 border-t-white rounded-full animate-spin"></div>
                 ) : (
                   <>
-                    <Download className="w-6 h-6" />
+                    <Download className="w-7 h-7" />
                     {t('generateDownload')}
                   </>
                 )}
@@ -486,8 +461,8 @@ export default function App() {
             </div>
 
             {assets.length > 0 && (
-              <div className="flex items-center gap-3 text-xs text-gray-500 dark:text-gray-400 justify-center font-bold animate-pulse">
-                <CheckCircle2 className="w-4 h-4 text-green-500" />
+              <div className="flex items-center gap-3 text-xs text-indigo-400 justify-center font-black uppercase tracking-[0.25em] animate-pulse drop-shadow-[0_0_8px_rgba(129,140,248,0.5)]">
+                <CheckCircle2 className="w-4 h-4" />
                 {t('readyToGenerate')}
               </div>
             )}
@@ -496,100 +471,61 @@ export default function App() {
         </main>
       </div>
       
-      {/* How to Use Modal */}
+      {/* Liquid Glass Modal */}
       {isModalOpen && (
-        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6">
-          <div 
-            className="absolute inset-0 bg-gray-950/60 backdrop-blur-xl animate-in fade-in duration-500"
-            onClick={() => setIsModalOpen(false)}
-          />
-          <div className="relative bg-white dark:bg-gray-900 border border-gray-100 dark:border-gray-800 rounded-[2.5rem] w-full max-w-2xl overflow-hidden shadow-2xl animate-in zoom-in-95 slide-in-from-bottom-10 duration-500">
-            <div className="flex items-center justify-between p-8 border-b border-gray-100 dark:border-gray-800 bg-gray-50/50 dark:bg-gray-850/50">
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+          <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-2xl animate-in fade-in duration-700" onClick={() => setIsModalOpen(false)} />
+          <div className={`relative rounded-[3.5rem] w-full max-w-2xl overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] animate-in zoom-in-95 slide-in-from-bottom-20 duration-700 ${liquidGlassClass}`}>
+            <div className="flex items-center justify-between p-10 border-b border-white/10 bg-white/5">
               <div className="flex items-center gap-4">
-                <div className="p-2.5 bg-indigo-600 rounded-2xl">
-                  <HelpCircle className="w-7 h-7 text-white" />
+                <div className="p-3 bg-indigo-600 rounded-2xl shadow-xl ring-1 ring-white/20">
+                  <HelpCircle className="w-8 h-8 text-white" />
                 </div>
-                <h2 className="text-2xl font-black text-gray-900 dark:text-white">{t('modalTitle')}</h2>
+                <h2 className="text-3xl font-black text-white tracking-tight">{t('modalTitle')}</h2>
               </div>
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="p-3 text-gray-400 hover:text-gray-900 dark:hover:text-white hover:bg-gray-100 dark:hover:bg-gray-800 rounded-2xl transition-all"
-              >
-                <X className="w-7 h-7" />
-              </button>
+              <button onClick={() => setIsModalOpen(false)} className="p-4 text-gray-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all"><X className="w-8 h-8" /></button>
             </div>
             
-            <div className="p-10 space-y-8 max-h-[70vh] overflow-y-auto custom-scrollbar">
-              <p className="text-lg text-gray-600 dark:text-gray-300 leading-relaxed font-medium">
-                {t('modalSubtitle')}
-              </p>
-              
-              <div className="grid gap-8">
-                {[
-                  { title: t('step1Title'), text: t('step1Text') },
-                  { title: t('step2Title'), text: t('step2Text') },
-                  { title: t('step3Title'), text: t('step3Text') },
-                  { title: t('step4Title'), text: t('step4Text') },
-                  { title: t('step5Title'), text: t('step5Text') },
-                  { title: t('step6Title'), text: t('step6Text') }
-                ].map((step, i) => (
-                  <div key={i} className="flex gap-6 group">
-                    <div className="flex-shrink-0 w-12 h-12 rounded-2xl bg-indigo-50 dark:bg-indigo-500/10 border border-indigo-100 dark:border-indigo-500/20 flex items-center justify-center text-indigo-600 dark:text-indigo-400 font-black text-xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-300 group-hover:scale-110 shadow-sm">
-                      {i + 1}
-                    </div>
-                    <div className="space-y-1.5">
-                      <h3 className="font-black text-lg text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{step.title}</h3>
-                      <p className="text-sm text-gray-500 dark:text-gray-400 leading-relaxed font-medium">{step.text}</p>
+            <div className="p-10 space-y-10 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              <p className="text-xl text-gray-300 leading-relaxed font-bold tracking-tight">{t('modalSubtitle')}</p>
+              <div className="grid gap-10">
+                {[1,2,3,4,5,6].map((i) => (
+                  <div key={i} className="flex gap-8 group">
+                    <div className="flex-shrink-0 w-14 h-14 rounded-2xl bg-indigo-500/10 border border-white/10 flex items-center justify-center text-indigo-400 font-black text-2xl group-hover:bg-indigo-600 group-hover:text-white transition-all duration-500 shadow-inner">{i}</div>
+                    <div className="space-y-2">
+                      <h3 className="font-black text-xl text-white group-hover:text-indigo-400 transition-colors">{t(`step${i}Title`)}</h3>
+                      <p className="text-base text-gray-400 leading-relaxed font-bold">{t(`step${i}Text`)}</p>
                     </div>
                   </div>
                 ))}
               </div>
             </div>
 
-            <div className="p-8 bg-gray-50/50 dark:bg-gray-850/50 border-t border-gray-100 dark:border-gray-800 flex justify-end">
-              <button 
-                onClick={() => setIsModalOpen(false)}
-                className="px-8 py-4 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-xl shadow-indigo-600/20 hover:-translate-y-1 active:scale-95"
-              >
-                {t('gotIt')}
-              </button>
+            <div className="p-10 bg-white/5 border-t border-white/10 flex justify-end">
+              <button onClick={() => setIsModalOpen(false)} className="px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-[0_15px_30px_rgba(79,70,229,0.3)] hover:-translate-y-1 active:scale-95 ring-1 ring-white/20">{t('gotIt')}</button>
             </div>
           </div>
         </div>
       )}
 
-      {/* Footer Signature */}
-      <footer className="w-full py-12 text-center mt-12 border-t border-gray-100 dark:border-gray-900">
-        <div className="inline-flex items-center gap-3 text-xs text-gray-400 dark:text-gray-500 font-bold tracking-widest uppercase">
-          <span>{t('developedBy')}</span>
-          <span className="w-1 h-1 bg-gray-300 dark:bg-gray-700 rounded-full"></span>
-          <div className="flex items-center gap-2 text-indigo-500/80">
-            <svg className="w-4 h-4 fill-current" viewBox="0 0 24 24">
-              <path d="M12,2L14.5,9.5L22,12L14.5,14.5L12,22L9.5,14.5L2,12L9.5,9.5L12,2Z" />
-            </svg>
-            <span className="tracking-[0.3em]">Gemini</span>
+      {/* Footer */}
+      <footer className="w-full py-16 text-center mt-12 border-t border-white/10 relative z-10 bg-black/20 backdrop-blur-md">
+        <div className="inline-flex items-center gap-4 text-[10px] text-gray-500 font-black tracking-[0.4em] uppercase">
+          <span className="drop-shadow-sm">{t('developedBy')}</span>
+          <span className="w-1.5 h-1.5 bg-gray-700 rounded-full shadow-inner" />
+          <div className="flex items-center gap-2 text-indigo-400 drop-shadow-[0_0_8px_rgba(129,140,248,0.4)]">
+            <svg className="w-5 h-5 fill-current" viewBox="0 0 24 24"><path d="M12,2L14.5,9.5L22,12L14.5,14.5L12,22L9.5,14.5L2,12L9.5,9.5L12,2Z" /></svg>
+            <span className="tracking-[0.5em]">Gemini</span>
           </div>
         </div>
       </footer>
 
       <style>{`
-        .image-pixelated {
-          image-rendering: pixelated;
-          image-rendering: crisp-edges;
-        }
-        .custom-scrollbar::-webkit-scrollbar {
-          width: 6px;
-        }
-        .custom-scrollbar::-webkit-scrollbar-track {
-          background: transparent;
-        }
-        .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #e2e8f0;
-          border-radius: 10px;
-        }
-        .dark .custom-scrollbar::-webkit-scrollbar-thumb {
-          background: #1e293b;
-        }
+        .image-pixelated { image-rendering: pixelated; image-rendering: crisp-edges; }
+        .custom-scrollbar::-webkit-scrollbar { width: 8px; }
+        .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
+        .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
       `}</style>
     </div>
   );
