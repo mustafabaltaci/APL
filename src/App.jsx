@@ -429,13 +429,13 @@ export default function App() {
               </div>
 
               <div className="pt-2 space-y-4">
-                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-850 px-4 py-3 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-all">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{t('totalAssets')}</span>
-                  <span className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400">{assets.length}</span>
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-white/5 px-4 py-3 rounded-2xl border border-gray-200 dark:border-white/10 transition-all hover:bg-gray-100 dark:hover:bg-white/10 group">
+                  <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('totalAssets')}</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{assets.length}</span>
                 </div>
-                <div className="flex justify-between items-center bg-gray-50 dark:bg-gray-850 px-4 py-3 rounded-xl border border-transparent hover:border-gray-200 dark:hover:border-gray-800 transition-all">
-                  <span className="text-xs font-bold text-gray-500 uppercase tracking-widest">{t('targetGrid')}</span>
-                  <span className="font-mono text-lg font-bold text-indigo-600 dark:text-indigo-400">{baseResolution}px</span>
+                <div className="flex justify-between items-center bg-gray-50 dark:bg-white/5 px-4 py-3 rounded-2xl border border-gray-200 dark:border-white/10 transition-all hover:bg-gray-100 dark:hover:bg-white/10 group">
+                  <span className="text-[10px] font-semibold text-gray-500 dark:text-gray-400 uppercase tracking-wider">{t('targetGrid')}</span>
+                  <span className="text-lg font-bold text-gray-900 dark:text-white group-hover:text-indigo-600 dark:group-hover:text-indigo-400 transition-colors">{baseResolution}px</span>
                 </div>
               </div>
 
