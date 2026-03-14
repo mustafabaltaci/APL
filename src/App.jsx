@@ -57,7 +57,8 @@ export default function App() {
               gridSpan: asset.gridSpan || { w: 1, h: 1 },
               padding: asset.padding || { x: 0, y: 0 },
               removeBg: asset.removeBg || false,
-              tolerance: asset.tolerance || 15
+              tolerance: asset.tolerance || 15,
+              cleanInnerWhites: asset.cleanInnerWhites || false
             };
           }));
           
@@ -84,7 +85,8 @@ export default function App() {
         gridSpan: { w: 1, h: 1 },
         padding: { x: 0, y: 0 },
         removeBg: true,
-        tolerance: 15
+        tolerance: 15,
+        cleanInnerWhites: false
       };
     });
     setAssets(prev => [...prev, ...newAssets]);
@@ -151,6 +153,7 @@ export default function App() {
                 padding: asset.padding,
                 removeBg: asset.removeBg,
                 tolerance: asset.tolerance,
+                cleanInnerWhites: asset.cleanInnerWhites,
                 fileName: asset.file.name,
                 fileType: asset.file.type,
                 base64Data: reader.result
@@ -368,16 +371,35 @@ export default function App() {
                     </label>
 
                     {asset.removeBg && (
-                      <div className="flex items-center gap-4 animate-in slide-in-from-top-2 duration-500">
-                        <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('tolerance')} {asset.tolerance}</span>
-                        <input 
-                          type="range" 
-                          min="0" 
-                          max="100" 
-                          value={asset.tolerance} 
-                          onChange={(e) => updateAssetSetting(asset.id, 'tolerance', parseInt(e.target.value))}
-                          className="flex-1 h-1.5 bg-black/30 rounded-full appearance-none cursor-pointer accent-indigo-500 ring-1 ring-white/5"
-                        />
+                      <div className="flex flex-col gap-4 animate-in slide-in-from-top-2 duration-500">
+                        <div className="flex items-center gap-4">
+                          <span className="text-[10px] font-black text-gray-500 uppercase tracking-widest">{t('tolerance')} {asset.tolerance}</span>
+                          <input 
+                            type="range" 
+                            min="0" 
+                            max="100" 
+                            value={asset.tolerance} 
+                            onChange={(e) => updateAssetSetting(asset.id, 'tolerance', parseInt(e.target.value))}
+                            className="flex-1 h-1.5 bg-black/30 rounded-full appearance-none cursor-pointer accent-indigo-500 ring-1 ring-white/5"
+                          />
+                        </div>
+                        
+                        <label className="flex items-center justify-between cursor-pointer group/toggle" title={t('cleanWhitesTooltip')}>
+                          <div className="flex flex-col">
+                            <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">{t('cleanInnerWhites')}</span>
+                            <span className="text-[8px] font-bold text-gray-600 dark:text-gray-500 uppercase tracking-tight">{t('cleanWhitesTooltip')}</span>
+                          </div>
+                          <div className="relative flex items-center">
+                            <input 
+                              type="checkbox" 
+                              checked={asset.cleanInnerWhites}
+                              onChange={(e) => updateAssetSetting(asset.id, 'cleanInnerWhites', e.target.checked)}
+                              className="sr-only peer"
+                            />
+                            <div className="w-10 h-5 bg-black/30 rounded-full peer peer-checked:bg-indigo-600 transition-all ring-1 ring-white/10"></div>
+                            <div className="absolute left-1 top-1 w-3 h-3 bg-white rounded-full peer-checked:translate-x-5 transition-all shadow-md"></div>
+                          </div>
+                        </label>
                       </div>
                     )}
                   </div>

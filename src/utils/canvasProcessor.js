@@ -2,22 +2,83 @@
  * Utility for pixel manipulation and sprite sheet generation
  */
 
-export const removeWhiteBackground = (ctx, imageData, tolerance = 15) => {
+export const removeWhiteBackground = (ctx, imageData, tolerance = 15, cleanInnerWhites = false) => {
   const data = imageData.data;
-  for (let i = 0; i < data.length; i += 4) {
-    const r = data[i];
-    const g = data[i + 1];
-    const b = data[i + 2];
-    
-    // Calculate Euclidean distance from pure white (255, 255, 255)
+  const width = imageData.width;
+  const height = imageData.height;
+
+  const isWhite = (r, g, b) => {
     const distance = Math.sqrt(
       Math.pow(255 - r, 2) + 
       Math.pow(255 - g, 2) + 
       Math.pow(255 - b, 2)
     );
+    return distance <= tolerance;
+  };
 
-    if (distance <= tolerance) {
-      data[i + 3] = 0; // Set alpha to 0
+  if (cleanInnerWhites) {
+    // Branch A: Global Scan
+    for (let i = 0; i < data.length; i += 4) {
+      if (isWhite(data[i], data[i + 1], data[i + 2])) {
+        data[i + 3] = 0;
+      }
+    }
+  } else {
+    // Branch B: Iterative BFS Flood Fill
+    const visited = new Uint8Array(width * height);
+    const queue = [];
+
+    // Add border pixels to queue
+    for (let x = 0; x < width; x++) {
+      // Top border
+      if (!visited[x] && isWhite(data[x * 4], data[x * 4 + 1], data[x * 4 + 2])) {
+        queue.push(x, 0);
+        visited[x] = 1;
+      }
+      // Bottom border
+      const bottomIdx = (height - 1) * width + x;
+      if (!visited[bottomIdx] && isWhite(data[bottomIdx * 4], data[bottomIdx * 4 + 1], data[bottomIdx * 4 + 2])) {
+        queue.push(x, height - 1);
+        visited[bottomIdx] = 1;
+      }
+    }
+    for (let y = 0; y < height; y++) {
+      // Left border
+      const leftIdx = y * width;
+      if (!visited[leftIdx] && isWhite(data[leftIdx * 4], data[leftIdx * 4 + 1], data[leftIdx * 4 + 2])) {
+        queue.push(0, y);
+        visited[leftIdx] = 1;
+      }
+      // Right border
+      const rightIdx = y * width + (width - 1);
+      if (!visited[rightIdx] && isWhite(data[rightIdx * 4], data[rightIdx * 4 + 1], data[rightIdx * 4 + 2])) {
+        queue.push(width - 1, y);
+        visited[rightIdx] = 1;
+      }
+    }
+
+    let head = 0;
+    while (head < queue.length) {
+      const x = queue[head++];
+      const y = queue[head++];
+      const idx = (y * width + x) * 4;
+      
+      data[idx + 3] = 0; // Make transparent
+
+      // Check 4 neighbors
+      const neighbors = [
+        [x, y - 1], [x, y + 1], [x - 1, y], [x + 1, y]
+      ];
+
+      for (const [nx, ny] of neighbors) {
+        if (nx >= 0 && nx < width && ny >= 0 && ny < height) {
+          const nIdx = ny * width + nx;
+          if (!visited[nIdx] && isWhite(data[nIdx * 4], data[nIdx * 4 + 1], data[nIdx * 4 + 2])) {
+            visited[nIdx] = 1;
+            queue.push(nx, ny);
+          }
+        }
+      }
     }
   }
   ctx.putImageData(imageData, 0, 0);
@@ -55,7 +116,7 @@ export const processAsset = (image, asset, baseResolution) => {
 
   if (asset.removeBg) {
     const imageData = tempCtx.getImageData(0, 0, image.width, image.height);
-    removeWhiteBackground(tempCtx, imageData, asset.tolerance);
+    removeWhiteBackground(tempCtx, imageData, asset.tolerance, asset.cleanInnerWhites);
   }
 
   // 2. Auto-Trim
