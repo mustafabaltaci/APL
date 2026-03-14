@@ -31,6 +31,8 @@ export default function App() {
   const [assets, setAssets] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+  const [previewData, setPreviewData] = useState(null);
 
   const onDrop = useCallback(async (acceptedFiles) => {
     const projectFile = acceptedFiles.find(file => file.name.endsWith('.spack') || file.name.endsWith('.json'));
@@ -192,11 +194,26 @@ export default function App() {
     }
   };
 
+  const handleConfirmDownload = () => {
+    if (!previewData) return;
+
+    downloadFile(previewData.mainImage, `${packageName}.png`);
+    
+    const tsxBlob = new Blob([previewData.tsxContent], { type: 'text/xml' });
+    downloadFile(tsxBlob, `${packageName}.tsx`);
+
+    if (previewData.outlinesImage) {
+      downloadFile(previewData.outlinesImage, `${packageName}_outlines.png`);
+    }
+
+    setIsPreviewOpen(false);
+    setPreviewData(null);
+  };
+
   const handleGenerate = async () => {
     if (assets.length === 0) return;
     setIsGenerating(true);
     
-    // Logic to determine actual grid size
     const activeGridW = baseResolution === 'custom' 
       ? (parseInt(customGridW, 10) || 32) 
       : (parseInt(baseResolution, 10) || 32);
@@ -206,19 +223,27 @@ export default function App() {
 
     try {
       const { canvas, packing } = await generateSpriteSheet(assets, { w: activeGridW, h: activeGridH }, { generateOutlines });
-      canvas.toBlob((blob) => downloadFile(blob, `${packageName}.png`));
+      
+      const mainImageBlob = await new Promise(resolve => canvas.toBlob(resolve));
       
       const tileCount = packing.placements.length;
       const columns = Math.floor(packing.width / activeGridW);
       const tsxContent = `<?xml version="1.0" encoding="UTF-8"?>\n<tileset version="1.10" tiledversion="1.10.2" name="${packageName}" tilewidth="${activeGridW}" tileheight="${activeGridH}" tilecount="${tileCount}" columns="${columns}">\n  <image source="${packageName}.png" width="${packing.width}" height="${packing.height}"/>\n</tileset>`;
-      const tsxBlob = new Blob([tsxContent], { type: 'text/xml' });
-      downloadFile(tsxBlob, `${packageName}.tsx`);
 
+      let outlinesImageBlob = null;
       if (generateOutlines) {
         const { generateHoverOutlines } = await import('./utils/canvasProcessor');
         const outlineCanvas = generateHoverOutlines(canvas);
-        outlineCanvas.toBlob((blob) => downloadFile(blob, `${packageName}_outlines.png`));
+        outlinesImageBlob = await new Promise(resolve => outlineCanvas.toBlob(resolve));
       }
+
+      setPreviewData({
+        mainImage: mainImageBlob,
+        outlinesImage: outlinesImageBlob,
+        tsxContent,
+        previewUrl: URL.createObjectURL(mainImageBlob)
+      });
+      setIsPreviewOpen(true);
 
     } catch (error) {
       console.error(t('generationFailed'), error);
@@ -597,6 +622,51 @@ export default function App() {
         </div>
       )}
 
+      {/* Liquid Glass Preview Modal */}
+      {isPreviewOpen && previewData && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+          <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-2xl animate-in fade-in duration-700" onClick={() => setIsPreviewOpen(false)} />
+          <div className={`relative rounded-[3.5rem] w-full max-w-4xl overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] animate-in zoom-in-95 slide-in-from-bottom-20 duration-700 ${liquidGlassClass}`}>
+            <div className="flex items-center justify-between p-10 border-b border-white/10 bg-white/5">
+              <div className="flex items-center gap-4">
+                <div className="p-3 bg-indigo-600 rounded-2xl shadow-xl ring-1 ring-white/20">
+                  <ImageIcon className="w-8 h-8 text-white" />
+                </div>
+                <h2 className="text-3xl font-black text-white tracking-tight">{t('previewTitle')}</h2>
+              </div>
+              <button onClick={() => setIsPreviewOpen(false)} className="p-4 text-gray-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all"><X className="w-8 h-8" /></button>
+            </div>
+            
+            <div className="p-10 flex flex-col items-center gap-8 overflow-hidden">
+              <div className="w-full relative rounded-3xl overflow-auto custom-scrollbar max-h-[60vh] border border-white/10 shadow-2xl bg-checkerboard">
+                <img 
+                  src={previewData.previewUrl} 
+                  alt="Sprite Sheet Preview" 
+                  className="max-w-none mx-auto image-pixelated shadow-2xl"
+                  style={{ display: 'block' }}
+                />
+              </div>
+              
+              <div className="flex gap-4 w-full">
+                <button 
+                  onClick={() => setIsPreviewOpen(false)} 
+                  className="flex-1 px-8 py-5 bg-white/5 hover:bg-white/10 text-white font-black rounded-2xl transition-all border border-white/10"
+                >
+                  {t('cancel')}
+                </button>
+                <button 
+                  onClick={handleConfirmDownload} 
+                  className="flex-[2] px-10 py-5 bg-indigo-600 hover:bg-indigo-500 text-white font-black rounded-2xl transition-all shadow-[0_15px_30px_rgba(79,70,229,0.3)] hover:-translate-y-1 active:scale-95 ring-1 ring-white/20 flex items-center justify-center gap-3"
+                >
+                  <Download className="w-6 h-6" />
+                  {t('confirmDownload')}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Footer */}
       <footer className="w-full py-16 text-center mt-12 border-t border-white/10 relative z-10 bg-black/20 backdrop-blur-md">
         <div className="inline-flex items-center gap-4 text-[10px] text-gray-500 font-black tracking-[0.4em] uppercase">
@@ -615,6 +685,15 @@ export default function App() {
         .custom-scrollbar::-webkit-scrollbar-track { background: rgba(0,0,0,0.2); border-radius: 10px; }
         .custom-scrollbar::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.1); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
         .custom-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.2); border-radius: 10px; border: 2px solid transparent; background-clip: content-box; }
+        .bg-checkerboard {
+          background-image: linear-gradient(45deg, #1a1a1a 25%, transparent 25%), 
+            linear-gradient(-45deg, #1a1a1a 25%, transparent 25%), 
+            linear-gradient(45deg, transparent 75%, #1a1a1a 75%), 
+            linear-gradient(-45deg, transparent 75%, #1a1a1a 75%);
+          background-size: 20px 20px;
+          background-position: 0 0, 0 10px, 10px -10px, -10px 0px;
+          background-color: #262626;
+        }
       `}</style>
     </div>
   );
