@@ -17,7 +17,11 @@ import {
   Sparkles,
   ChevronLeft,
   Copy,
-  Check
+  Check,
+  Info,
+  Lightbulb,
+  ListOrdered,
+  AlertTriangle
 } from 'lucide-react';
 import { generateSpriteSheet } from './utils/canvasProcessor';
 import { useLanguage } from './context/LanguageContext';
@@ -44,6 +48,7 @@ export default function App() {
   const [selectedPrompt, setSelectedPrompt] = useState(null);
   const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
   const [isCopied, setIsCopied] = useState(false);
+  const [showPromptGuide, setShowPromptGuide] = useState(true);
 
   React.useEffect(() => {
     if (isPromptModalOpen && promptsData.length === 0) {
@@ -724,6 +729,15 @@ export default function App() {
                 </h2>
               </div>
               <div className="flex items-center gap-2">
+                {!selectedPrompt && (
+                  <button 
+                    onClick={() => setShowPromptGuide(!showPromptGuide)}
+                    className={`p-3 rounded-2xl transition-all flex items-center gap-2 text-sm font-black uppercase tracking-widest ${showPromptGuide ? 'bg-purple-500 text-white shadow-lg' : 'text-gray-400 hover:text-white hover:bg-white/10'}`}
+                    title={t('howToUsePrompts')}
+                  >
+                    <Info className="w-5 h-5" />
+                  </button>
+                )}
                 {selectedPrompt && (
                   <button 
                     onClick={() => setSelectedPrompt(null)}
@@ -775,17 +789,70 @@ export default function App() {
                   </button>
                 </div>
               ) : (
-                <div className="grid gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
-                  {promptsData.map((item, idx) => (
-                    <button
-                      key={idx}
-                      onClick={() => setSelectedPrompt(item)}
-                      className="flex items-center justify-between p-5 bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/30 rounded-3xl transition-all group text-left"
-                    >
-                      <span className="font-black text-gray-200 group-hover:text-purple-400 transition-colors">{item.title}</span>
-                      <ChevronLeft className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transition-all rotate-180" />
-                    </button>
-                  ))}
+                <div className="space-y-6 animate-in fade-in slide-in-from-left-4 duration-500">
+                  {showPromptGuide && (
+                    <div className={`p-8 rounded-[2.5rem] space-y-8 animate-in fade-in zoom-in-95 duration-500 ${nestedGlassClass}`}>
+                      <div className="flex items-center gap-4">
+                        <div className="p-3 bg-indigo-500/20 rounded-2xl">
+                          <Lightbulb className="w-6 h-6 text-indigo-400" />
+                        </div>
+                        <h3 className="text-2xl font-black text-white">{t('howToUsePrompts')}</h3>
+                      </div>
+                      
+                      <p className="text-gray-300 font-bold leading-relaxed">{t('promptsIntro')}</p>
+                      
+                      <div className="p-6 bg-blue-500/10 border border-blue-500/20 rounded-3xl flex gap-4">
+                        <Info className="w-6 h-6 text-blue-400 shrink-0" />
+                        <p className="text-sm text-blue-200 leading-relaxed font-bold italic">{t('promptsRecommendation')}</p>
+                      </div>
+
+                      <div className="space-y-6">
+                        <div className="flex items-center gap-3">
+                          <ListOrdered className="w-5 h-5 text-indigo-400" />
+                          <h4 className="font-black text-white uppercase tracking-widest text-xs">{t('configuration')}</h4>
+                        </div>
+                        <div className="grid gap-6">
+                          {[1,2,3,4,5,6].map(i => (
+                            <div key={i} className="flex gap-4 group">
+                              <div className="w-8 h-8 rounded-xl bg-white/5 border border-white/10 flex items-center justify-center text-xs font-black text-indigo-400 shrink-0 group-hover:bg-indigo-600 group-hover:text-white transition-all">{i}</div>
+                              <div className="space-y-1">
+                                <p className="font-black text-sm text-white group-hover:text-indigo-400 transition-colors">{t(`promptStep${i}Title`)}</p>
+                                <p className="text-xs text-gray-500 font-bold leading-relaxed">{t(`promptStep${i}Text`)}</p>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <div className="p-6 bg-amber-500/10 border border-amber-500/20 rounded-3xl space-y-4">
+                        <div className="flex items-center gap-3">
+                          <AlertTriangle className="w-5 h-5 text-amber-500" />
+                          <h4 className="font-black text-amber-500 uppercase tracking-[0.2em] text-[10px]">{t('importantNotes')}</h4>
+                        </div>
+                        <ul className="space-y-3">
+                          {[1,2,3].map(i => (
+                            <li key={i} className="flex gap-3 text-xs text-amber-200/80 font-bold leading-relaxed">
+                              <span className="w-1 h-1 bg-amber-500 rounded-full shrink-0 mt-1.5" />
+                              {t(`note${i}`)}
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    </div>
+                  )}
+
+                  <div className="grid gap-4">
+                    {promptsData.map((item, idx) => (
+                      <button
+                        key={idx}
+                        onClick={() => setSelectedPrompt(item)}
+                        className="flex items-center justify-between p-5 bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/30 rounded-3xl transition-all group text-left"
+                      >
+                        <span className="font-black text-gray-200 group-hover:text-purple-400 transition-colors">{item.title}</span>
+                        <ChevronLeft className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transition-all rotate-180" />
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
