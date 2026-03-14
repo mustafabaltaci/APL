@@ -293,11 +293,11 @@ export default function App() {
                         type="number"
                         value={customGridW}
                         onChange={(e) => setCustomGridW(parseInt(e.target.value) || '')}
-                        className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl pl-2 pr-6 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-16 font-bold text-gray-800 dark:text-white"
+                        className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl pl-2 pr-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-20 font-bold text-gray-800 dark:text-white text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         min="1"
                         placeholder="W"
                       />
-                      <span className="absolute right-2 text-[8px] font-black text-gray-500 uppercase pointer-events-none">w</span>
+                      <span className="absolute right-1.5 top-1 text-[7px] font-black text-gray-500 uppercase pointer-events-none">w</span>
                     </div>
                     <span className="text-gray-500 font-black text-xs px-1">×</span>
                     <div className="relative flex items-center">
@@ -305,11 +305,11 @@ export default function App() {
                         type="number"
                         value={customGridH}
                         onChange={(e) => setCustomGridH(parseInt(e.target.value) || '')}
-                        className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl pl-2 pr-6 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-16 font-bold text-gray-800 dark:text-white"
+                        className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl pl-2 pr-2 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-20 font-bold text-gray-800 dark:text-white text-center [appearance:textfield] [&::-webkit-outer-spin-button]:appearance-none [&::-webkit-inner-spin-button]:appearance-none"
                         min="1"
                         placeholder="H"
                       />
-                      <span className="absolute right-2 text-[8px] font-black text-gray-500 uppercase pointer-events-none">h</span>
+                      <span className="absolute right-1.5 top-1 text-[7px] font-black text-gray-500 uppercase pointer-events-none">h</span>
                     </div>
                   </div>
                 )}
