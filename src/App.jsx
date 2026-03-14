@@ -13,7 +13,11 @@ import {
   X,
   Image as ImageIcon,
   Save,
-  FolderOpen
+  FolderOpen,
+  Sparkles,
+  ChevronLeft,
+  Copy,
+  Check
 } from 'lucide-react';
 import { generateSpriteSheet } from './utils/canvasProcessor';
 import { useLanguage } from './context/LanguageContext';
@@ -33,6 +37,35 @@ export default function App() {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [previewData, setPreviewData] = useState(null);
+
+  // Prompt Ideas States
+  const [isPromptModalOpen, setIsPromptModalOpen] = useState(false);
+  const [promptsData, setPromptsData] = useState([]);
+  const [selectedPrompt, setSelectedPrompt] = useState(null);
+  const [isLoadingPrompts, setIsLoadingPrompts] = useState(false);
+  const [isCopied, setIsCopied] = useState(false);
+
+  React.useEffect(() => {
+    if (isPromptModalOpen && promptsData.length === 0) {
+      setIsLoadingPrompts(true);
+      fetch('https://script.google.com/macros/s/AKfycbxK6N5RGTE_rtCE5uMemIw03mH9ZiN8RvUFxN91uXxX6SvBKETW09WDZmlb0Cao8ZXn7w/exec')
+        .then(res => res.json())
+        .then(data => {
+          setPromptsData(data);
+          setIsLoadingPrompts(false);
+        })
+        .catch(err => {
+          console.error("Failed to fetch prompts:", err);
+          setIsLoadingPrompts(false);
+        });
+    }
+  }, [isPromptModalOpen, promptsData.length]);
+
+  const handleCopyPrompt = (text) => {
+    navigator.clipboard.writeText(text);
+    setIsCopied(true);
+    setTimeout(() => setIsCopied(false), 2000);
+  };
 
   const onDrop = useCallback(async (acceptedFiles) => {
     const projectFile = acceptedFiles.find(file => file.name.endsWith('.spack') || file.name.endsWith('.json'));
@@ -274,13 +307,22 @@ export default function App() {
             <div>
               <div className="flex items-center gap-3">
                 <h1 className="text-2xl font-black tracking-tight text-gray-900 dark:text-white drop-shadow-sm">{t('title')}</h1>
-                <button 
-                  onClick={() => setIsModalOpen(true)}
-                  className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-white/10 rounded-full transition-all"
-                  title={t('howToUse')}
-                >
-                  <HelpCircle className="w-5 h-5" />
-                </button>
+                <div className="flex items-center gap-1.5">
+                  <button 
+                    onClick={() => setIsModalOpen(true)}
+                    className="p-1.5 text-gray-400 hover:text-indigo-500 hover:bg-white/10 rounded-full transition-all"
+                    title={t('howToUse')}
+                  >
+                    <HelpCircle className="w-5 h-5" />
+                  </button>
+                  <button 
+                    onClick={() => setIsPromptModalOpen(true)}
+                    className="flex items-center gap-2 px-3 py-1.5 text-xs font-black text-purple-400 hover:text-purple-300 bg-purple-500/10 hover:bg-purple-500/20 border border-purple-500/20 rounded-full transition-all animate-pulse shadow-[0_0_15px_rgba(168,85,247,0.2)]"
+                  >
+                    <Sparkles className="w-3.5 h-3.5" />
+                    {t('promptIdeas')}
+                  </button>
+                </div>
               </div>
               <p className="text-sm text-gray-500 dark:text-gray-400 font-bold tracking-tight">{t('description')}</p>
             </div>
@@ -662,6 +704,90 @@ export default function App() {
                   {t('confirmDownload')}
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Prompt Ideas Modal */}
+      {isPromptModalOpen && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4 sm:p-6 overflow-hidden">
+          <div className="absolute inset-0 bg-gray-950/80 backdrop-blur-2xl animate-in fade-in duration-700" onClick={() => { setIsPromptModalOpen(false); setSelectedPrompt(null); }} />
+          <div className={`relative rounded-[3.5rem] w-full max-w-2xl overflow-hidden shadow-[0_50px_100px_-20px_rgba(0,0,0,0.8)] animate-in zoom-in-95 slide-in-from-bottom-20 duration-700 ${liquidGlassClass}`}>
+            <div className="flex items-center justify-between p-8 border-b border-white/10 bg-white/5">
+              <div className="flex items-center gap-4">
+                <div className="p-2.5 bg-purple-600 rounded-2xl shadow-xl ring-1 ring-white/20">
+                  <Sparkles className="w-6 h-6 text-white" />
+                </div>
+                <h2 className="text-2xl font-black text-white tracking-tight">
+                  {selectedPrompt ? t('promptIdeas') : t('promptIdeas')}
+                </h2>
+              </div>
+              <div className="flex items-center gap-2">
+                {selectedPrompt && (
+                  <button 
+                    onClick={() => setSelectedPrompt(null)}
+                    className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all flex items-center gap-2 text-sm font-black uppercase tracking-widest"
+                  >
+                    <ChevronLeft className="w-5 h-5" />
+                    {t('back')}
+                  </button>
+                )}
+                <button onClick={() => { setIsPromptModalOpen(false); setSelectedPrompt(null); }} className="p-3 text-gray-400 hover:text-white hover:bg-white/10 rounded-2xl transition-all"><X className="w-6 h-6" /></button>
+              </div>
+            </div>
+            
+            <div className="p-8 max-h-[60vh] overflow-y-auto custom-scrollbar">
+              {isLoadingPrompts ? (
+                <div className="flex flex-col items-center justify-center py-20 gap-4">
+                  <div className="w-10 h-10 border-4 border-purple-500/30 border-t-purple-500 rounded-full animate-spin"></div>
+                  <p className="text-sm font-black text-purple-400 uppercase tracking-widest animate-pulse">{t('loading')}</p>
+                </div>
+              ) : selectedPrompt ? (
+                <div className="space-y-8 animate-in fade-in slide-in-from-right-4 duration-500">
+                  <div className="space-y-2">
+                    <h3 className="text-xl font-black text-white">{selectedPrompt.title}</h3>
+                    <div className="p-6 bg-black/40 border border-white/10 rounded-3xl font-mono text-sm leading-relaxed text-gray-300 shadow-inner break-words">
+                      {selectedPrompt.prompt}
+                    </div>
+                  </div>
+                  
+                  <button 
+                    onClick={() => handleCopyPrompt(selectedPrompt.prompt)}
+                    className={`
+                      w-full py-5 rounded-2xl font-black text-lg flex items-center justify-center gap-3 transition-all duration-300
+                      ${isCopied 
+                        ? 'bg-green-600 text-white shadow-[0_0_30px_rgba(22,163,74,0.4)] scale-[0.98]' 
+                        : 'bg-white/10 hover:bg-white/20 text-white border border-white/10 shadow-lg'}
+                    `}
+                  >
+                    {isCopied ? (
+                      <>
+                        <Check className="w-6 h-6" />
+                        {t('copied')}
+                      </>
+                    ) : (
+                      <>
+                        <Copy className="w-6 h-6 text-purple-400" />
+                        {t('copy')}
+                      </>
+                    )}
+                  </button>
+                </div>
+              ) : (
+                <div className="grid gap-4 animate-in fade-in slide-in-from-left-4 duration-500">
+                  {promptsData.map((item, idx) => (
+                    <button
+                      key={idx}
+                      onClick={() => setSelectedPrompt(item)}
+                      className="flex items-center justify-between p-5 bg-white/5 hover:bg-purple-500/10 border border-white/10 hover:border-purple-500/30 rounded-3xl transition-all group text-left"
+                    >
+                      <span className="font-black text-gray-200 group-hover:text-purple-400 transition-colors">{item.title}</span>
+                      <ChevronLeft className="w-5 h-5 text-gray-500 group-hover:text-purple-400 transition-all rotate-180" />
+                    </button>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
