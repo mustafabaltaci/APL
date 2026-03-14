@@ -25,7 +25,8 @@ export default function App() {
   const { t } = useLanguage();
   const [packageName, setPackageName] = useState('MySpriteSheet');
   const [baseResolution, setBaseResolution] = useState(32);
-  const [customGridSize, setCustomGridSize] = useState(128);
+  const [customGridW, setCustomGridW] = useState(64);
+  const [customGridH, setCustomGridH] = useState(64);
   const [generateOutlines, setGenerateOutlines] = useState(false);
   const [assets, setAssets] = useState([]);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -44,7 +45,8 @@ export default function App() {
           
           setPackageName(data.packageName);
           if (data.baseResolution) setBaseResolution(data.baseResolution);
-          if (data.customGridSize) setCustomGridSize(data.customGridSize);
+          if (data.customGridW) setCustomGridW(data.customGridW);
+          if (data.customGridH) setCustomGridH(data.customGridH);
           if (data.generateOutlines !== undefined) setGenerateOutlines(data.generateOutlines);
           
           const restoredAssets = await Promise.all(data.assets.map(async (asset) => {
@@ -171,7 +173,8 @@ export default function App() {
         version: 1,
         packageName,
         baseResolution,
-        customGridSize,
+        customGridW,
+        customGridH,
         generateOutlines,
         assets: serializedAssets
       };
@@ -194,19 +197,22 @@ export default function App() {
     setIsGenerating(true);
     
     // Logic to determine actual grid size
-    const activeGridSize = baseResolution === 'custom' 
-      ? (parseInt(customGridSize, 10) || 32) 
+    const activeGridW = baseResolution === 'custom' 
+      ? (parseInt(customGridW, 10) || 32) 
+      : (parseInt(baseResolution, 10) || 32);
+    const activeGridH = baseResolution === 'custom' 
+      ? (parseInt(customGridH, 10) || 32) 
       : (parseInt(baseResolution, 10) || 32);
 
     try {
-      const { canvas, packing } = await generateSpriteSheet(assets, activeGridSize, { generateOutlines });
+      const { canvas, packing } = await generateSpriteSheet(assets, { w: activeGridW, h: activeGridH }, { generateOutlines });
       canvas.toBlob((blob) => downloadFile(blob, `${packageName}.png`));
       
       const tileCount = packing.placements.length;
-      const columns = Math.floor(packing.width / activeGridSize);
-      const tsxContent = `<?xml version="1.0" encoding="UTF-8"?>\n<tileset version="1.10" tiledversion="1.10.2" name="${packageName}" tilewidth="${activeGridSize}" tileheight="${activeGridSize}" tilecount="${tileCount}" columns="${columns}">\n  <image source="${packageName}.png" width="${packing.width}" height="${packing.height}"/>\n</tileset>`;
+      const columns = Math.floor(packing.width / activeGridW);
+      const tsxContent = `<?xml version="1.0" encoding="UTF-8"?>\n<tileset version="1.10" tiledversion="1.10.2" name="${packageName}" tilewidth="${activeGridW}" tileheight="${activeGridH}" tilecount="${tileCount}" columns="${columns}">\n  <image source="${packageName}.png" width="${packing.width}" height="${packing.height}"/>\n</tileset>`;
       const tsxBlob = new Blob([tsxContent], { type: 'text/xml' });
-      downloadFile(tsxBlob, `${tsxBlob.name || packageName}.tsx`);
+      downloadFile(tsxBlob, `${packageName}.tsx`);
 
       if (generateOutlines) {
         const { generateHoverOutlines } = await import('./utils/canvasProcessor');
@@ -281,15 +287,30 @@ export default function App() {
                   <option value="custom" className="bg-white text-gray-900 dark:bg-gray-900 dark:text-white">{t('custom')}</option>
                 </select>
                 {baseResolution === 'custom' && (
-                  <div className="relative flex items-center animate-in fade-in zoom-in duration-300">
-                    <input 
-                      type="number"
-                      value={customGridSize}
-                      onChange={(e) => setCustomGridSize(parseInt(e.target.value) || '')}
-                      className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl pl-3 pr-8 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-20 font-bold text-gray-800 dark:text-white"
-                      min="1"
-                    />
-                    <span className="absolute right-3 text-[10px] font-black text-gray-500 uppercase">px</span>
+                  <div className="flex items-center gap-1 animate-in fade-in zoom-in duration-300">
+                    <div className="relative flex items-center">
+                      <input 
+                        type="number"
+                        value={customGridW}
+                        onChange={(e) => setCustomGridW(parseInt(e.target.value) || '')}
+                        className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl pl-2 pr-6 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-16 font-bold text-gray-800 dark:text-white"
+                        min="1"
+                        placeholder="W"
+                      />
+                      <span className="absolute right-2 text-[8px] font-black text-gray-500 uppercase pointer-events-none">w</span>
+                    </div>
+                    <span className="text-gray-500 font-black text-xs px-1">×</span>
+                    <div className="relative flex items-center">
+                      <input 
+                        type="number"
+                        value={customGridH}
+                        onChange={(e) => setCustomGridH(parseInt(e.target.value) || '')}
+                        className="bg-white/10 dark:bg-black/20 border border-white/10 rounded-xl pl-2 pr-6 py-2 text-sm focus:ring-2 focus:ring-indigo-500 outline-none transition-all w-16 font-bold text-gray-800 dark:text-white"
+                        min="1"
+                        placeholder="H"
+                      />
+                      <span className="absolute right-2 text-[8px] font-black text-gray-500 uppercase pointer-events-none">h</span>
+                    </div>
                   </div>
                 )}
               </div>
@@ -485,7 +506,9 @@ export default function App() {
                 <div className={`flex justify-between items-center px-5 py-4 ${nestedGlassClass} hover:bg-white/10 group`}>
                   <span className="text-[10px] font-black text-gray-500 dark:text-gray-400 uppercase tracking-[0.2em]">{t('targetGrid')}</span>
                   <span className="text-xl font-black text-indigo-400 drop-shadow-[0_0_10px_rgba(129,140,248,0.3)] group-hover:scale-110 transition-transform">
-                    {baseResolution === 'custom' ? (customGridSize || 32) : baseResolution}px
+                    {baseResolution === 'custom' 
+                      ? `${customGridW || 32}x${customGridH || 32}` 
+                      : `${baseResolution}x${baseResolution}`}
                   </span>
                 </div>
               </div>

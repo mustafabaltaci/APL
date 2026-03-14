@@ -107,6 +107,10 @@ export const getTrimmedBounds = (ctx, width, height) => {
 };
 
 export const processAsset = (image, asset, baseResolution) => {
+  // Logic to handle both single number and {w, h} object for baseResolution
+  const resW = typeof baseResolution === 'object' ? baseResolution.w : baseResolution;
+  const resH = typeof baseResolution === 'object' ? baseResolution.h : baseResolution;
+
   // 1. Create temporary canvas for initial processing (color keying)
   const tempCanvas = document.createElement('canvas');
   tempCanvas.width = image.width;
@@ -124,8 +128,8 @@ export const processAsset = (image, asset, baseResolution) => {
   if (!bounds) return null; // Empty image
 
   // 3. Scale and Center in Grid Cell
-  const gridW = asset.gridSpan.w * baseResolution;
-  const gridH = asset.gridSpan.h * baseResolution;
+  const gridW = asset.gridSpan.w * resW;
+  const gridH = asset.gridSpan.h * resH;
   const padX = asset.padding?.x || 0;
   const padY = asset.padding?.y || 0;
 
